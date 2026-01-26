@@ -14,18 +14,15 @@
         .card { background: var(--card-bg); border-radius: 25px; padding: 20px; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border: 1px solid #f0f0f0; }
         label { font-size: 0.9rem; color: #636e72; font-weight: 600; display: block; margin-bottom: 8px; }
         select, input { width: 100%; padding: 12px; border: 2px solid #f1f2f6; border-radius: 12px; margin-bottom: 12px; font-size: 16px; box-sizing: border-box; background: #fafafa; outline: none; transition: 0.3s; }
-        select:focus, input:focus { border-color: #a29bfe; background: #fff; }
         .calc-table { width: 100%; border-collapse: collapse; }
         .calc-table td { padding: 12px 5px; border-bottom: 1px dotted #eee; }
         .calc-table td:last-child { text-align: right; color: #6c5ce7; font-weight: 600; font-family: 'Prompt'; }
         .water-box { background: #e3f2fd; color: #0984e3; padding: 15px; border-radius: 18px; text-align: center; font-weight: 600; margin-top: 15px; border: 1px solid #74b9ff; }
         .btn-main { width: 100%; padding: 18px; background: linear-gradient(to right, #ff7675, #fab1a0); color: white; border: none; border-radius: 50px; font-size: 1.1rem; font-weight: 600; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 15px rgba(255,118,117,0.4); transition: 0.3s; }
-        .btn-main:active { transform: scale(0.98); }
-        .total-box { background: #2d3436; color: white; padding: 20px; border-radius: 25px; display: flex; justify-content: space-around; text-align: center; margin-top: 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .total-box { background: #2d3436; color: white; padding: 20px; border-radius: 25px; display: flex; justify-content: space-around; text-align: center; margin-top: 10px; }
         .total-box b { font-size: 1.5rem; display: block; font-family: 'Prompt'; color: #fab1a0; }
         .method-select { background: #fff9db; border: 2px solid #ffe066; font-weight: 600; color: #f08c00; }
         .log-table { width: 100%; font-size: 0.9rem; border-collapse: collapse; margin-top: 10px; }
-        .log-table th { text-align: left; padding: 10px; border-bottom: 2px solid #eee; color: #b2bec3; }
         .log-table td { padding: 12px 10px; border-bottom: 1px solid #f1f2f6; }
         .btn-del { color: #ff7675; cursor: pointer; font-size: 1.2rem; border: none; background: none; }
     </style>
@@ -33,12 +30,15 @@
 <body>
 
 <div class="header">
-    <h1 style="margin:0; font-size:1.3rem; font-family:'Prompt'">🥤 BD calc. ✨</h1>
+    <h1 style="margin:0; font-size:1.3rem; font-family:'Prompt'">🌀 BD calc. ✨</h1>
     <button id="syncBtn" onclick="syncData()" style="background:rgba(255,255,255,0.3); border:none; color:white; padding:8px 15px; border-radius:12px; cursor:pointer; font-weight:600;">🔄 อัปเดตสูตร</button>
 </div>
 
 <div class="container">
-    <center><img src="https://cdn-icons-png.flaticon.com/512/2965/2965567.png" width="70" style="margin: 10px 0;"></center>
+    <center>
+        <img src="https://cdn-icons-png.flaticon.com/512/3221/3221626.png" width="90" style="margin: 10px 0;">
+        <div style="font-size: 0.8rem; color: #a29bfe; font-weight: bold; margin-bottom: 15px;">Healthy Blender Meals</div>
+    </center>
 
     <div class="card">
         <label>📋 เลือกสูตรอาหาร</label>
@@ -46,7 +46,7 @@
         
         <label>⚡ วิธีเพิ่มพลังงาน</label>
         <select id="userMethod" class="method-select" onchange="calculate()">
-            <option value="เพิ่มวัตถุดิบ">🥬 เพิ่มวัตถุดิบ</option>
+            <option value="เพิ่มวัตถุดิบ">🥗 เพิ่มวัตถุดิบ</option>
             <option value="เติมอาหารทางการแพทย์">🍼 เติมอาหารทางการแพทย์</option>
         </select>
 
@@ -67,7 +67,7 @@
 
     <div class="card">
         <table class="calc-table"><tbody id="tbody"></tbody></table>
-        <div id="waterInfo" class="water-box">💧 กรุณากดปุ่มอัปเดตสูตร...</div>
+        <div id="waterInfo" class="water-box">💧 ระบบพร้อมคำนวณ...</div>
         <button class="btn-main" onclick="addRecord()">💖 บันทึกมื้อนี้</button>
     </div>
 
@@ -88,7 +88,6 @@
 
 <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzWeMeP_SFHgV_MWXxDhK-XlCBKCu28MAOIRAZx1_Q_jsSDcipTPzjF-K_s2azxtx5H/exec";
-    
     let db = JSON.parse(localStorage.getItem('bd_final_db')) || {};
     let logs = JSON.parse(localStorage.getItem('bd_final_logs')) || [];
 
@@ -108,10 +107,8 @@
             db = newDb;
             localStorage.setItem('bd_final_db', JSON.stringify(db));
             renderMenu();
-            alert("✅ อัปเดตข้อมูลสูตรสำเร็จ!");
-        } catch(e) {
-            alert("❌ เชื่อมต่อผิดพลาด: โปรดตรวจสอบการตั้งค่า Deploy");
-        }
+            alert("✅ อัปเดตข้อมูลสำเร็จ!");
+        } catch(e) { alert("❌ เชื่อมต่อผิดพลาด"); }
         btn.innerText = "🔄 อัปเดตสูตร";
     }
 
@@ -155,7 +152,7 @@
         }
         document.getElementById('tbody').innerHTML = html;
         let water = vol - totalBaseWeight - (extraMed * 0.7);
-        document.getElementById('waterInfo').innerText = `💧 น้ำที่ต้องใช้ ~ ${Math.max(0, water).toFixed(0)} ml (เติมจนครบ ${vol} ml)`;
+        document.getElementById('waterInfo').innerText = `💧 น้ำที่ใช้ ~ ${Math.max(0, water).toFixed(0)} ml (เติมจนครบ ${vol} ml)`;
     }
 
     function addRecord() {
@@ -167,7 +164,7 @@
         logs.push({ time: time, vol: v, kcal: v*c, id: Date.now() });
         localStorage.setItem('bd_final_logs', JSON.stringify(logs));
         renderLogs();
-        alert("บันทึกมื้อนี้เรียบร้อยแล้ว 💖");
+        alert("บันทึกแล้ว 💖");
     }
 
     function renderLogs() {
@@ -193,7 +190,7 @@
     }
 
     function clearLogs() {
-        if(confirm("ล้างข้อมูลการบันทึกทั้งหมดของวันนี้?")) {
+        if(confirm("ล้างข้อมูลบันทึกทั้งหมด?")) {
             logs = [];
             localStorage.removeItem('bd_final_logs');
             renderLogs();
