@@ -2,140 +2,126 @@
 <html>
 <head>
     <base target="_top">
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3014/3014521.png">
+<link rel="shortcut icon" href="https://cdn-icons-png.flaticon.com/512/3014/3014521.png">
+
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="BD calc.">
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&family=Prompt:wght@400;600&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary-purple: #a29bfe;
-            --light-purple: #efeeff;
-            --text-dark: #2d3436;
-            --text-gray: #636e72;
-            --white: #ffffff;
-            --bg-soft: #f9f9fb;
+            --soft-bg: #f5f6fa;
+            --text-main: #2d3436;
+            --accent-red: #ff7675;
         }
 
         body { 
             font-family: 'Sarabun', sans-serif; 
-            background-color: #f1f2f6;
+            background-color: var(--soft-bg);
             margin: 0; padding: 0;
             display: flex; flex-direction: column; align-items: center;
+            color: var(--text-main);
         }
 
-        /* Header แบบในรูป */
+        /* Header สีม่วง */
         .app-header {
             width: 100%; max-width: 500px;
             background-color: var(--primary-purple);
-            padding: 15px 20px;
+            padding: 18px 20px;
             display: flex; align-items: center;
             color: white; box-sizing: border-box;
-            position: sticky; top: 0; z-index: 100;
+            position: sticky; top: 0; z-index: 1000;
         }
         .app-header h1 { 
-            margin: 0 auto 0 15px; font-size: 1.5rem; 
-            font-family: 'Inter', sans-serif; font-weight: 600;
+            margin: 0 auto 0 15px; font-size: 1.4rem; 
+            font-family: 'Prompt', sans-serif; font-weight: 600;
         }
 
-        /* Main Container */
         .content-body {
-            width: 100%; max-width: 450px;
+            width: 100%; max-width: 480px;
             padding: 15px; box-sizing: border-box;
         }
 
         .card {
-            background: var(--white);
-            border-radius: 15px;
-            padding: 15px;
-            margin-bottom: 15px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            background: white; border-radius: 20px;
+            padding: 20px; margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
         }
 
-        .input-row { margin-bottom: 12px; }
-        .input-row label { 
-            font-size: 0.85rem; color: var(--text-gray); 
-            display: block; margin-bottom: 5px; 
-        }
+        label { font-size: 0.85rem; color: #636e72; display: block; margin-bottom: 6px; }
 
         select, input { 
-            width: 100%; padding: 10px 12px;
-            border: 1px solid #dfe6e9; border-radius: 8px;
-            font-size: 1rem; font-family: 'Sarabun', sans-serif;
-            background: #fafafa; color: var(--text-dark);
-            box-sizing: border-box;
+            width: 100%; padding: 12px; border: 1.5px solid #edf2f7;
+            border-radius: 12px; font-size: 1rem; font-family: 'Sarabun';
+            background: #fafafa; box-sizing: border-box; margin-bottom: 12px;
         }
 
-        /* ตารางผลลัพธ์ (ตารางคำนวณ) */
-        .calc-table {
-            width: 100%; border-collapse: collapse;
-            margin-top: 10px; font-size: 0.95rem;
-        }
-        .calc-table th {
-            text-align: left; padding: 10px;
-            background: #f1f2f6; color: var(--text-gray);
-            font-weight: 600; font-size: 0.8rem;
-        }
-        .calc-table td {
-            padding: 10px; border-bottom: 1px solid #f1f2f6;
-        }
-        /* เน้นตัวเลขให้อ่านง่าย ไม่ตาลาย */
-        .num-font { font-family: 'Inter', sans-serif; font-weight: 500; color: #0984e3; }
-
-        .water-highlight {
-            background: #fff0f3; color: #d63031;
-            padding: 10px; border-radius: 8px;
-            text-align: center; font-weight: 600; margin-top: 10px;
+        /* ตารางรายการวัตถุดิบ */
+        .calc-table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .calc-table tr td { padding: 12px 5px; border-bottom: 1px solid #f1f2f6; }
+        .calc-table tr td:last-child { 
+            text-align: right; 
+            font-family: 'Prompt', sans-serif; /* ฟอนต์ตัวเลขที่อ่านง่าย */
+            font-weight: 600; color: #6c5ce7; 
         }
 
-        /* ปุ่ม Action */
-        .btn-main {
-            width: 100%; padding: 15px;
-            background: #ff7675; color: white;
-            border: none; border-radius: 25px;
+        .water-box {
+            background: #fff0f3; color: #e84393;
+            padding: 12px; border-radius: 12px;
+            text-align: center; font-weight: 600; margin: 15px 0;
+            font-size: 0.95rem; border: 1px dashed #ff7675;
+        }
+
+        .btn-add {
+            width: 100%; padding: 16px;
+            background: var(--accent-red); color: white;
+            border: none; border-radius: 50px;
             font-size: 1.1rem; font-weight: 600;
-            margin-top: 10px; cursor: pointer;
-            box-shadow: 0 4px 10px rgba(255, 118, 117, 0.3);
+            cursor: pointer; transition: 0.2s;
+            box-shadow: 0 4px 12px rgba(255, 118, 117, 0.3);
         }
 
-        /* ส่วนรายการบันทึก (Summary List) */
-        .summary-list { margin-top: 20px; }
+        /* ส่วนรายการสรุป */
+        .summary-header { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; }
+        .btn-clear { background: white; border: 1px solid #fab1a0; color: #ff7675; padding: 4px 12px; border-radius: 20px; cursor: pointer; }
+
         .log-item {
-            background: white; padding: 10px 15px;
-            border-radius: 10px; margin-bottom: 8px;
-            display: flex; justify-content: space-between;
+            background: white; padding: 15px; border-radius: 15px;
+            margin-top: 10px; display: flex; justify-content: space-between;
             border-left: 5px solid var(--primary-purple);
         }
-        .total-box {
-            background: #2d3436; color: white;
-            padding: 15px; border-radius: 15px;
-            display: flex; justify-content: space-around;
-            text-align: center; margin-top: 10px;
-        }
 
-        .btn-clear {
-            background: none; border: 1px solid #ff7675;
-            color: #ff7675; padding: 5px 15px;
-            border-radius: 15px; cursor: pointer; font-size: 0.8rem;
+        .total-black-card {
+            background: #2d3436; color: white;
+            padding: 20px; border-radius: 20px;
+            display: flex; justify-content: space-around;
+            margin-top: 15px; text-align: center;
         }
+        .total-black-card small { display: block; color: #b2bec3; margin-bottom: 5px; }
+        .total-black-card b { font-size: 1.4rem; font-family: 'Prompt'; }
+
     </style>
 </head>
 <body>
 
 <div class="app-header">
-    <span>⬅️</span>
+    <span style="cursor:pointer" onclick="location.reload()">⬅️</span>
     <h1>BD calc. 🧮</h1>
 </div>
 
 <div class="content-body">
     <div class="card">
-        <div class="input-row">
-            <label>เลือกสูตรอาหาร</label>
-            <select id="sheetSelect" onchange="loadIngredients()"></select>
-        </div>
+        <label>เลือกสูตรอาหาร</label>
+        <select id="sheetSelect" onchange="loadIngredients()"></select>
         
         <div style="display: flex; gap: 10px;">
-            <div class="input-row" style="flex: 2;">
+            <div style="flex: 2;">
                 <label>ปริมาตร (ml)</label>
                 <input type="number" id="vol" value="1000" oninput="calculate()">
             </div>
-            <div class="input-row" style="flex: 1;">
+            <div style="flex: 1;">
                 <label>ความเข้มข้น</label>
                 <select id="conc" onchange="calculate()">
                     <option value="1.0">1.0</option>
@@ -146,100 +132,112 @@
             </div>
         </div>
 
-        <div class="input-row">
-            <label>ยี่ห้ออาหารทางการแพทย์ (ถ้ามี)</label>
-            <select id="brand" onchange="calculate()">
-                <option value="Gen-DM">Gen-DM</option>
-                <option value="Blendera">Blendera</option>
-            </select>
-        </div>
+        <label>ยี่ห้ออาหารทางการแพทย์ (ถ้ามี)</label>
+        <select id="brand" onchange="calculate()">
+            <option value="Gen-DM">Gen-DM</option>
+            <option value="Blendera">Blendera</option>
+        </select>
     </div>
 
     <div class="card">
-        <b style="font-size: 0.9rem; color: var(--text-gray);">รายการคำนวณ</b>
+        <b style="font-size: 0.9rem; color: #b2bec3;">รายการคำนวณ</b>
         <table class="calc-table">
-            <thead>
-                <tr><th>วัตถุดิบ</th><th style="text-align:right;">ปริมาณ</th></tr>
-            </thead>
-            <tbody id="tbody"></tbody>
+            <tbody id="tbody">
+                </tbody>
         </table>
-        <div id="waterInfo" class="water-highlight"></div>
-        <button class="btn-main" onclick="addRecord()">✨ บันทึกสถิติประจำวัน</button>
+        
+        <div id="waterInfo" class="water-box">กรุณาเลือกสูตรอาหาร...</div>
+        
+        <button class="btn-add" onclick="addRecord()">✨ บันทึกสถิติประจำวัน</button>
     </div>
 
-    <div class="summary-list">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-            <b style="color: var(--text-gray);">รายการที่บันทึกแล้ว</b>
-            <button class="btn-clear" onclick="clearRecords()">ล้างข้อมูล</button>
-        </div>
-        <div id="logContainer"></div>
-        
-        <div class="total-box">
-            <div><small>รวม Vol</small><div id="totalVol" style="font-size: 1.2rem; font-weight: 600;">0</div></div>
-            <div><small>รวม Kcal</small><div id="totalKcal" style="font-size: 1.2rem; font-weight: 600;">0</div></div>
-        </div>
+    <div class="summary-header">
+        <b style="color: #636e72;">รายการที่บันทึกแล้ว</b>
+        <button class="btn-clear" onclick="clearRecords()">ล้างข้อมูล</button>
+    </div>
+    
+    <div id="logContainer"></div>
+
+    <div class="total-black-card">
+        <div><small>รวม Vol</small><b id="totalVol">0</b></div>
+        <div><small>รวม Kcal</small><b id="totalKcal">0</b></div>
     </div>
 </div>
 
 <script>
     let currentIngredients = [];
-    let dailyRecords = [];
+    let savedRecords = [];
 
+    // เริ่มต้นดึงชื่อ Sheet
     window.onload = () => {
         google.script.run.withSuccessHandler(names => {
             let select = document.getElementById('sheetSelect');
+            select.innerHTML = '<option value="" disabled selected>กรุณาเลือกสูตร...</option>';
             names.forEach(n => select.add(new Option(n, n)));
-            loadIngredients();
         }).getSheetNames();
     };
 
+    // โหลดวัตถุดิบจาก Sheet ที่เลือก
     function loadIngredients() {
         let name = document.getElementById('sheetSelect').value;
+        if(!name) return;
+        
         google.script.run.withSuccessHandler(data => {
             currentIngredients = data;
             calculate();
         }).getIngredientsFromSheet(name);
     }
 
+    // ฟังก์ชันคำนวณหลัก
     function calculate() {
         let vol = parseFloat(document.getElementById('vol').value) || 0;
         let conc = parseFloat(document.getElementById('conc').value);
         let brand = document.getElementById('brand').value;
         
+        if (currentIngredients.length === 0) return;
+
         let html = "";
-        let totalWeight = 0;
+        let totalBaseWeight = 0;
 
         currentIngredients.forEach(item => {
-            if(item.name) {
-                let amt = (item.base / 1000) * vol; // สูตรพื้นฐาน 1.0
-                totalWeight += amt;
-                html += `<tr><td>${item.name}</td><td style="text-align:right;" class="num-font">${amt.toFixed(1)} ${item.unit}</td></tr>`;
+            if(item.name && item.name.trim() !== "") {
+                // คำนวณตามสัดส่วน (base / 1000) * vol
+                let amt = (item.base / 1000) * vol;
+                totalBaseWeight += amt;
+                html += `<tr>
+                            <td>${item.name}</td>
+                            <td>${amt.toLocaleString(undefined, {minimumFractionDigits: 1})} ${item.unit}</td>
+                         </tr>`;
             }
         });
 
-        // คำนวณผงเพิ่ม
+        // คำนวณผงเพิ่มพลังงาน
         let extraKcal = (vol * conc) - vol;
         let medicalWeight = 0;
         if (extraKcal > 0) {
             let kps = (brand === "Blendera") ? 37.33 : 36;
             let wps = (brand === "Blendera") ? 8.33 : 8;
-            let scoops = extraKcal / kps;
-            medicalWeight = scoops * wps;
-            html += `<tr style="color: #e67e22; font-weight:600;"><td>${brand}</td><td style="text-align:right;">${medicalWeight.toFixed(1)} กรัม</td></tr>`;
+            medicalWeight = (extraKcal / kps) * wps;
+            html += `<tr style="color: #e67e22; font-weight:600;">
+                        <td>${brand}</td>
+                        <td>${medicalWeight.toFixed(1)} กรัม</td>
+                     </tr>`;
         }
 
         document.getElementById('tbody').innerHTML = html;
-        let water = vol - totalWeight - (medicalWeight * 0.7);
+        
+        // คำนวณน้ำเปล่า
+        let water = vol - totalBaseWeight - (medicalWeight * 0.7);
         document.getElementById('waterInfo').innerText = `💧 เติมน้ำจนครบ ${vol} ml (ประมาณ ${Math.max(0, water).toFixed(0)} ml)`;
     }
 
     function addRecord() {
+        let type = document.getElementById('sheetSelect').value;
         let vol = parseFloat(document.getElementById('vol').value) || 0;
         let conc = parseFloat(document.getElementById('conc').value);
-        let type = document.getElementById('sheetSelect').value;
-        if(vol <= 0) return;
+        if(!type || vol <= 0) return alert("กรุณาเลือกสูตรและระบุปริมาตร");
 
-        dailyRecords.push({ type, vol, kcal: vol * conc });
+        savedRecords.push({ type, vol, kcal: vol * conc });
         updateSummary();
     }
 
@@ -248,10 +246,10 @@
         let html = "";
         let sumV = 0, sumK = 0;
 
-        dailyRecords.forEach(r => {
+        savedRecords.forEach(r => {
             html += `<div class="log-item">
-                        <span>${r.type}</span>
-                        <span class="num-font">${r.vol} ml / ${r.kcal} kcal</span>
+                        <span><b>${r.type}</b></span>
+                        <span>${r.vol} ml / ${r.kcal.toFixed(0)} kcal</span>
                      </div>`;
             sumV += r.vol;
             sumK += r.kcal;
@@ -263,8 +261,8 @@
     }
 
     function clearRecords() {
-        if(confirm("ล้างข้อมูลทั้งหมด?")) {
-            dailyRecords = [];
+        if(confirm("ต้องการล้างข้อมูลทั้งหมด?")) {
+            savedRecords = [];
             updateSummary();
         }
     }
