@@ -5,56 +5,61 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>BD calc</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&family=Prompt:wght@600&display=swap" rel="stylesheet">
+    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3075/3075977.png">
     <style>
-        :root { --primary: #a29bfe; --bg: #f0f2f5; --text: #2d3436; --accent: #ff7675; }
+        :root { --primary: #74b9ff; --bg: #f7f9fc; --text: #2d3436; --accent: #ff7675; --card-bg: #ffffff; }
         body { font-family: 'Sarabun', sans-serif; background: var(--bg); margin: 0; color: var(--text); padding-bottom: 30px; }
-        .header { background: var(--primary); padding: 15px; color: white; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .header { background: linear-gradient(135deg, #a29bfe, #74b9ff); padding: 15px; color: white; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
         .container { max-width: 600px; margin: 0 auto; padding: 15px; }
-        .card { background: white; border-radius: 20px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-        label { font-size: 0.85rem; color: #636e72; font-weight: 600; display: block; margin-bottom: 5px; }
-        select, input { width: 100%; padding: 12px; border: 1px solid #edf2f7; border-radius: 10px; margin-bottom: 10px; font-size: 16px; box-sizing: border-box; background: #fafafa; outline: none; }
+        .card { background: var(--card-bg); border-radius: 25px; padding: 20px; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.05); border: 1px solid #f0f0f0; }
+        label { font-size: 0.9rem; color: #636e72; font-weight: 600; display: block; margin-bottom: 8px; }
+        select, input { width: 100%; padding: 12px; border: 2px solid #f1f2f6; border-radius: 12px; margin-bottom: 12px; font-size: 16px; box-sizing: border-box; background: #fafafa; outline: none; transition: 0.3s; }
+        select:focus, input:focus { border-color: #a29bfe; background: #fff; }
         .calc-table { width: 100%; border-collapse: collapse; }
-        .calc-table td { padding: 12px 5px; border-bottom: 1px solid #eee; }
+        .calc-table td { padding: 12px 5px; border-bottom: 1px dotted #eee; }
         .calc-table td:last-child { text-align: right; color: #6c5ce7; font-weight: 600; font-family: 'Prompt'; }
-        .water-box { background: #fff0f3; color: #e84393; padding: 15px; border-radius: 15px; text-align: center; font-weight: 600; margin-top: 15px; border: 1px dashed #ff7675; }
-        .btn-main { width: 100%; padding: 18px; background: var(--accent); color: white; border: none; border-radius: 50px; font-size: 1.1rem; font-weight: 600; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 10px rgba(255,118,117,0.3); }
-        .total-box { background: #2d3436; color: white; padding: 20px; border-radius: 20px; display: flex; justify-content: space-around; text-align: center; margin-top: 10px; }
-        .total-box b { font-size: 1.5rem; display: block; font-family: 'Prompt'; color: #a29bfe; }
-        .method-select { background: #fff9db; border: 1.5px solid #ffe066; font-weight: 600; color: #f08c00; }
+        .water-box { background: #e3f2fd; color: #0984e3; padding: 15px; border-radius: 18px; text-align: center; font-weight: 600; margin-top: 15px; border: 1px solid #74b9ff; }
+        .btn-main { width: 100%; padding: 18px; background: linear-gradient(to right, #ff7675, #fab1a0); color: white; border: none; border-radius: 50px; font-size: 1.1rem; font-weight: 600; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 15px rgba(255,118,117,0.4); transition: 0.3s; }
+        .btn-main:active { transform: scale(0.98); }
+        .total-box { background: #2d3436; color: white; padding: 20px; border-radius: 25px; display: flex; justify-content: space-around; text-align: center; margin-top: 10px; box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
+        .total-box b { font-size: 1.5rem; display: block; font-family: 'Prompt'; color: #fab1a0; }
+        .method-select { background: #fff9db; border: 2px solid #ffe066; font-weight: 600; color: #f08c00; }
         .log-table { width: 100%; font-size: 0.9rem; border-collapse: collapse; margin-top: 10px; }
-        .log-table th { text-align: left; padding: 8px; border-bottom: 2px solid #eee; }
-        .log-table td { padding: 10px 8px; border-bottom: 1px solid #f9f9f9; }
-        .btn-del { color: #ff7675; cursor: pointer; font-size: 1.1rem; border: none; background: none; }
+        .log-table th { text-align: left; padding: 10px; border-bottom: 2px solid #eee; color: #b2bec3; }
+        .log-table td { padding: 12px 10px; border-bottom: 1px solid #f1f2f6; }
+        .btn-del { color: #ff7675; cursor: pointer; font-size: 1.2rem; border: none; background: none; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <h1 style="margin:0; font-size:1.2rem; font-family:'Prompt'">BD calc.</h1>
-    <button id="syncBtn" onclick="syncData()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:8px 12px; border-radius:10px; cursor:pointer;">🔄 อัปเดตสูตร</button>
+    <h1 style="margin:0; font-size:1.3rem; font-family:'Prompt'">🥤 BD calc. ✨</h1>
+    <button id="syncBtn" onclick="syncData()" style="background:rgba(255,255,255,0.3); border:none; color:white; padding:8px 15px; border-radius:12px; cursor:pointer; font-weight:600;">🔄 อัปเดตสูตร</button>
 </div>
 
 <div class="container">
+    <center><img src="https://cdn-icons-png.flaticon.com/512/2965/2965567.png" width="70" style="margin: 10px 0;"></center>
+
     <div class="card">
-        <label>เลือกสูตรอาหาร</label>
+        <label>📋 เลือกสูตรอาหาร</label>
         <select id="sheetSelect" onchange="loadMethod()"></select>
         
-        <label>วิธีเพิ่มพลังงาน</label>
+        <label>⚡ วิธีเพิ่มพลังงาน</label>
         <select id="userMethod" class="method-select" onchange="calculate()">
-            <option value="เพิ่มวัตถุดิบ">เพิ่มวัตถุดิบ</option>
-            <option value="เติมอาหารทางการแพทย์">เติมอาหารทางการแพทย์</option>
+            <option value="เพิ่มวัตถุดิบ">🥬 เพิ่มวัตถุดิบ</option>
+            <option value="เติมอาหารทางการแพทย์">🍼 เติมอาหารทางการแพทย์</option>
         </select>
 
         <div style="display: flex; gap: 10px;">
-            <div style="flex: 2;"><label>ปริมาตร (ml)</label><input type="number" id="vol" value="1000" oninput="calculate()"></div>
-            <div style="flex: 1;"><label>Conc.</label>
+            <div style="flex: 2;"><label>🧪 ปริมาตร (ml)</label><input type="number" id="vol" value="1000" oninput="calculate()"></div>
+            <div style="flex: 1;"><label>🎯 Conc.</label>
                 <select id="conc" onchange="calculate()">
                     <option value="1.0">1.0</option><option value="1.2" selected>1.2</option><option value="1.5">1.5</option><option value="2.0">2.0</option>
                 </select>
             </div>
         </div>
 
-        <label>ยี่ห้ออาหารทางการแพทย์</label>
+        <label>🏢 ยี่ห้ออาหารทางการแพทย์</label>
         <select id="brand" onchange="calculate()">
             <option value="Gen-DM">Gen-DM</option><option value="Blendera">Blendera</option>
         </select>
@@ -62,22 +67,22 @@
 
     <div class="card">
         <table class="calc-table"><tbody id="tbody"></tbody></table>
-        <div id="waterInfo" class="water-box">กรุณากดปุ่มอัปเดตสูตร...</div>
-        <button class="btn-main" onclick="addRecord()">✨ บันทึกมื้อนี้</button>
+        <div id="waterInfo" class="water-box">💧 กรุณากดปุ่มอัปเดตสูตร...</div>
+        <button class="btn-main" onclick="addRecord()">💖 บันทึกมื้อนี้</button>
     </div>
 
     <div class="total-box">
-        <div><small>Vol รวมวันนี้</small><b id="tVol">0</b></div>
-        <div><small>Kcal รวมวันนี้</small><b id="tKcal">0</b></div>
+        <div><small>🥣 Vol รวมวันนี้</small><b id="tVol">0</b></div>
+        <div><small>🔥 Kcal รวมวันนี้</small><b id="tKcal">0</b></div>
     </div>
 
     <div class="card" id="logSection" style="display:none; margin-top:15px;">
-        <label>ประวัติการบันทึกวันนี้</label>
+        <label>🕒 ประวัติการบันทึกวันนี้</label>
         <table class="log-table">
             <thead><tr><th>เวลา</th><th>Vol</th><th>Kcal</th><th>ลบ</th></tr></thead>
             <tbody id="logBody"></tbody>
         </table>
-        <center><button onclick="clearLogs()" style="margin-top:20px; border:none; background:#eee; color:#666; padding:8px 20px; border-radius:50px; cursor:pointer;">🗑️ ล้างข้อมูลทั้งหมด</button></center>
+        <center><button onclick="clearLogs()" style="margin-top:20px; border:none; background:#f1f2f6; color:#636e72; padding:10px 25px; border-radius:50px; cursor:pointer; font-weight:600;">🗑️ ล้างข้อมูลทั้งหมด</button></center>
     </div>
 </div>
 
@@ -103,9 +108,9 @@
             db = newDb;
             localStorage.setItem('bd_final_db', JSON.stringify(db));
             renderMenu();
-            alert("✅ อัปเดตสำเร็จ!");
+            alert("✅ อัปเดตข้อมูลสูตรสำเร็จ!");
         } catch(e) {
-            alert("❌ เชื่อมต่อผิดพลาด: ตรวจสอบการตั้งค่า Deploy เป็น Anyone");
+            alert("❌ เชื่อมต่อผิดพลาด: โปรดตรวจสอบการตั้งค่า Deploy");
         }
         btn.innerText = "🔄 อัปเดตสูตร";
     }
@@ -150,7 +155,7 @@
         }
         document.getElementById('tbody').innerHTML = html;
         let water = vol - totalBaseWeight - (extraMed * 0.7);
-        document.getElementById('waterInfo').innerText = `💧 เติมน้ำจนครบ ${vol} ml (น้ำ ~ ${Math.max(0, water).toFixed(0)} ml)`;
+        document.getElementById('waterInfo').innerText = `💧 น้ำที่ต้องใช้ ~ ${Math.max(0, water).toFixed(0)} ml (เติมจนครบ ${vol} ml)`;
     }
 
     function addRecord() {
@@ -162,7 +167,7 @@
         logs.push({ time: time, vol: v, kcal: v*c, id: Date.now() });
         localStorage.setItem('bd_final_logs', JSON.stringify(logs));
         renderLogs();
-        alert("บันทึกแล้ว ✅");
+        alert("บันทึกมื้อนี้เรียบร้อยแล้ว 💖");
     }
 
     function renderLogs() {
@@ -188,7 +193,7 @@
     }
 
     function clearLogs() {
-        if(confirm("ล้างข้อมูลทั้งหมด?")) {
+        if(confirm("ล้างข้อมูลการบันทึกทั้งหมดของวันนี้?")) {
             logs = [];
             localStorage.removeItem('bd_final_logs');
             renderLogs();
