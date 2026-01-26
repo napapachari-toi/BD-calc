@@ -5,79 +5,60 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>BD calc</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&family=Prompt:wght@600&display=swap" rel="stylesheet">
+    
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3221/3221626.png">
+    <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3221/3221626.png">
+
     <style>
-        :root { --primary: #74b9ff; --bg: #f8faff; --text: #2d3436; --accent: #ff7675; --card-bg: #ffffff; }
+        :root { --primary: #a29bfe; --bg: #f0f2f5; --text: #2d3436; --accent: #ff7675; }
         body { font-family: 'Sarabun', sans-serif; background: var(--bg); margin: 0; color: var(--text); padding-bottom: 30px; }
-        
-        /* Header แบบ Gradient นุ่มๆ */
-        .header { background: linear-gradient(135deg, #a29bfe, #74b9ff); padding: 18px 15px; color: white; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 12px rgba(116, 185, 255, 0.2); }
-        .header h1 { margin: 0; font-size: 1.3rem; font-family: 'Prompt'; display: flex; align-items: center; gap: 8px; }
-        
-        .container { max-width: 500px; margin: 0 auto; padding: 15px; }
-        
-        /* Card แบบโค้งมนดูสมัยใหม่ */
-        .card { background: var(--card-bg); border-radius: 24px; padding: 22px; margin-bottom: 15px; box-shadow: 0 8px 20px rgba(0,0,0,0.03); border: 1px solid rgba(255,255,255,0.8); }
-        
-        label { font-size: 0.85rem; color: #b2bec3; font-weight: 600; display: block; margin-bottom: 8px; margin-left: 5px; text-transform: uppercase; letter-spacing: 0.5px; }
-        
-        select, input { width: 100%; padding: 14px; border: 2px solid #f1f2f6; border-radius: 16px; margin-bottom: 12px; font-size: 16px; box-sizing: border-box; background: #f9f9fb; outline: none; transition: all 0.2s; color: var(--text); }
-        select:focus, input:focus { border-color: #a29bfe; background: #fff; box-shadow: 0 0 0 4px rgba(162, 155, 254, 0.1); }
-        
-        /* ตารางคำนวณ */
-        .calc-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; }
-        .calc-table td { padding: 14px 8px; border-bottom: 1px solid #f1f2f6; font-size: 0.95rem; }
-        .calc-table tr:last-child td { border-bottom: none; }
+        .header { background: var(--primary); padding: 15px; color: white; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .container { max-width: 600px; margin: 0 auto; padding: 15px; }
+        .card { background: white; border-radius: 20px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        label { font-size: 0.85rem; color: #636e72; font-weight: 600; display: block; margin-bottom: 5px; }
+        select, input { width: 100%; padding: 12px; border: 1px solid #edf2f7; border-radius: 10px; margin-bottom: 10px; font-size: 16px; box-sizing: border-box; background: #fafafa; outline: none; }
+        .calc-table { width: 100%; border-collapse: collapse; }
+        .calc-table td { padding: 12px 5px; border-bottom: 1px solid #eee; }
         .calc-table td:last-child { text-align: right; color: #6c5ce7; font-weight: 600; font-family: 'Prompt'; }
-        
-        .water-box { background: #eef2ff; color: #4361ee; padding: 16px; border-radius: 18px; text-align: center; font-weight: 600; margin-top: 5px; font-size: 0.9rem; }
-        
-        /* ปุ่มกด */
-        .btn-main { width: 100%; padding: 18px; background: linear-gradient(135deg, #6c5ce7, #a29bfe); color: white; border: none; border-radius: 18px; font-size: 1.05rem; font-weight: 600; cursor: pointer; margin-top: 15px; box-shadow: 0 6px 15px rgba(108, 92, 231, 0.25); transition: 0.3s; }
-        .btn-main:active { transform: scale(0.97); }
-        
-        /* กล่องสรุปยอด */
-        .total-box { background: #2d3436; color: white; padding: 22px; border-radius: 24px; display: flex; justify-content: space-around; text-align: center; margin-top: 10px; box-shadow: 0 10px 25px rgba(0,0,0,0.15); }
-        .total-box small { color: #b2bec3; font-size: 0.75rem; display: block; margin-bottom: 5px; }
-        .total-box b { font-size: 1.4rem; font-family: 'Prompt'; color: #74b9ff; }
-        
-        .method-select { background: #fff9db; border-color: #ffe066; color: #f08c00; font-weight: 600; }
-        
-        /* ส่วนประวัติ */
-        .log-table { width: 100%; font-size: 0.85rem; border-collapse: collapse; }
-        .log-table th { text-align: left; padding: 10px; color: #b2bec3; font-weight: 400; border-bottom: 1px solid #f1f2f6; }
-        .log-table td { padding: 12px 10px; border-bottom: 1px solid #f9f9fb; }
-        .btn-del { color: #ff7675; cursor: pointer; border: none; background: none; font-size: 1.1rem; }
+        .water-box { background: #fff0f3; color: #e84393; padding: 15px; border-radius: 15px; text-align: center; font-weight: 600; margin-top: 15px; border: 1px dashed #ff7675; }
+        .btn-main { width: 100%; padding: 18px; background: var(--accent); color: white; border: none; border-radius: 50px; font-size: 1.1rem; font-weight: 600; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 10px rgba(255,118,117,0.3); }
+        .total-box { background: #2d3436; color: white; padding: 20px; border-radius: 20px; display: flex; justify-content: space-around; text-align: center; margin-top: 10px; }
+        .total-box b { font-size: 1.5rem; display: block; font-family: 'Prompt'; color: #a29bfe; }
+        .method-select { background: #fff9db; border: 1.5px solid #ffe066; font-weight: 600; color: #f08c00; }
+        .log-table { width: 100%; font-size: 0.9rem; border-collapse: collapse; margin-top: 10px; }
+        .log-table th { text-align: left; padding: 8px; border-bottom: 2px solid #eee; }
+        .log-table td { padding: 10px 8px; border-bottom: 1px solid #f9f9f9; }
+        .btn-del { color: #ff7675; cursor: pointer; font-size: 1.1rem; border: none; background: none; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <h1>🌀 BD calc. ✨</h1>
-    <button id="syncBtn" onclick="syncData()" style="background:rgba(255,255,255,0.25); border:none; color:white; padding:8px 14px; border-radius:12px; cursor:pointer; font-size:0.85rem; font-weight:600;">🔄 ดึงสูตร</button>
+    <h1 style="margin:0; font-size:1.2rem; font-family:'Prompt'">🥤 BD calc. ✨</h1>
+    <button id="syncBtn" onclick="syncData()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:8px 12px; border-radius:10px; cursor:pointer;">🔄 อัปเดตสูตร</button>
 </div>
 
 <div class="container">
     <div class="card">
-        <label>📋 เลือกสูตรอาหาร</label>
+        <label>เลือกสูตรอาหาร</label>
         <select id="sheetSelect" onchange="loadMethod()"></select>
         
-        <label>⚡ วิธีเพิ่มพลังงาน</label>
+        <label>วิธีเพิ่มพลังงาน</label>
         <select id="userMethod" class="method-select" onchange="calculate()">
             <option value="เพิ่มวัตถุดิบ">เพิ่มวัตถุดิบ</option>
             <option value="เติมอาหารทางการแพทย์">เติมอาหารทางการแพทย์</option>
         </select>
 
-        <div style="display: flex; gap: 12px;">
-            <div style="flex: 2;"><label>🧪 ปริมาตร (ml)</label><input type="number" id="vol" value="1000" oninput="calculate()"></div>
-            <div style="flex: 1;"><label>🎯 Conc.</label>
+        <div style="display: flex; gap: 10px;">
+            <div style="flex: 2;"><label>ปริมาตร (ml)</label><input type="number" id="vol" value="1000" oninput="calculate()"></div>
+            <div style="flex: 1;"><label>Conc.</label>
                 <select id="conc" onchange="calculate()">
                     <option value="1.0">1.0</option><option value="1.2" selected>1.2</option><option value="1.5">1.5</option><option value="2.0">2.0</option>
                 </select>
             </div>
         </div>
 
-        <label>🏢 ยี่ห้ออาหารทางการแพทย์</label>
+        <label>ยี่ห้ออาหารทางการแพทย์</label>
         <select id="brand" onchange="calculate()">
             <option value="Gen-DM">Gen-DM</option><option value="Blendera">Blendera</option>
         </select>
@@ -85,29 +66,28 @@
 
     <div class="card">
         <table class="calc-table"><tbody id="tbody"></tbody></table>
-        <div id="waterInfo" class="water-box">💧 พร้อมสำหรับการคำนวณ</div>
-        <button class="btn-main" onclick="addRecord()">💖 บันทึกมื้อนี้</button>
+        <div id="waterInfo" class="water-box">กรุณากดปุ่มอัปเดตสูตร...</div>
+        <button class="btn-main" onclick="addRecord()">✨ บันทึกมื้อนี้</button>
     </div>
 
     <div class="total-box">
-        <div><small>🥣 Vol รวมวันนี้</small><b id="tVol">0</b></div>
-        <div><small>🔥 Kcal รวมวันนี้</small><b id="tKcal">0</b></div>
+        <div><small>Vol รวมวันนี้</small><b id="tVol">0</b></div>
+        <div><small>Kcal รวมวันนี้</small><b id="tKcal">0</b></div>
     </div>
 
-    <div id="logSection" style="display:none; margin-top:20px;">
-        <label style="margin-bottom:10px;">🕒 ประวัติวันนี้</label>
-        <div class="card" style="padding:10px;">
-            <table class="log-table">
-                <thead><tr><th>เวลา</th><th>Vol</th><th>Kcal</th><th></th></tr></thead>
-                <tbody id="logBody"></tbody>
-            </table>
-            <center><button onclick="clearLogs()" style="margin-top:15px; border:none; background:none; color:#b2bec3; padding:10px; cursor:pointer; font-size:0.8rem;">🗑️ ล้างประวัติทั้งหมด</button></center>
-        </div>
+    <div class="card" id="logSection" style="display:none; margin-top:15px;">
+        <label>ประวัติการบันทึกวันนี้</label>
+        <table class="log-table">
+            <thead><tr><th>เวลา</th><th>Vol</th><th>Kcal</th><th>ลบ</th></tr></thead>
+            <tbody id="logBody"></tbody>
+        </table>
+        <center><button onclick="clearLogs()" style="margin-top:20px; border:none; background:#eee; color:#666; padding:8px 20px; border-radius:50px; cursor:pointer;">🗑️ ล้างข้อมูลทั้งหมด</button></center>
     </div>
 </div>
 
 <script>
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzWeMeP_SFHgV_MWXxDhK-XlCBKCu28MAOIRAZx1_Q_jsSDcipTPzjF-K_s2azxtx5H/exec";
+    
     let db = JSON.parse(localStorage.getItem('bd_final_db')) || {};
     let logs = JSON.parse(localStorage.getItem('bd_final_logs')) || [];
 
@@ -127,9 +107,11 @@
             db = newDb;
             localStorage.setItem('bd_final_db', JSON.stringify(db));
             renderMenu();
-            alert("✅ อัปเดตข้อมูลสูตรแล้ว");
-        } catch(e) { alert("❌ เชื่อมต่อผิดพลาด"); }
-        btn.innerText = "🔄 ดึงสูตร";
+            alert("✅ อัปเดตสำเร็จ!");
+        } catch(e) {
+            alert("❌ เชื่อมต่อผิดพลาด: ตรวจสอบการตั้งค่า Deploy เป็น Anyone");
+        }
+        btn.innerText = "🔄 อัปเดตสูตร";
     }
 
     function renderMenu() {
@@ -172,18 +154,19 @@
         }
         document.getElementById('tbody').innerHTML = html;
         let water = vol - totalBaseWeight - (extraMed * 0.7);
-        document.getElementById('waterInfo').innerText = `💧 น้ำที่ใช้ ~ ${Math.max(0, water).toFixed(0)} ml (เติมจนครบ ${vol} ml)`;
+        document.getElementById('waterInfo').innerText = `💧 เติมน้ำจนครบ ${vol} ml (น้ำ ~ ${Math.max(0, water).toFixed(0)} ml)`;
     }
 
     function addRecord() {
         const v = parseFloat(document.getElementById('vol').value) || 0;
         const c = parseFloat(document.getElementById('conc').value);
-        if(v <= 0 || !document.getElementById('sheetSelect').value) return;
+        if(v <= 0) return;
         const now = new Date();
         const time = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
         logs.push({ time: time, vol: v, kcal: v*c, id: Date.now() });
         localStorage.setItem('bd_final_logs', JSON.stringify(logs));
         renderLogs();
+        alert("บันทึกแล้ว ✅");
     }
 
     function renderLogs() {
@@ -195,7 +178,7 @@
             section.style.display = "block";
             logs.forEach(item => {
                 tv += item.vol; tk += item.kcal;
-                body.innerHTML += `<tr><td>${item.time}</td><td>${item.vol} ml</td><td>${item.kcal} kcal</td><td><button class="btn-del" onclick="deleteEntry(${item.id})">×</button></td></tr>`;
+                body.innerHTML += `<tr><td>${item.time}</td><td>${item.vol}</td><td>${item.kcal}</td><td><button class="btn-del" onclick="deleteEntry(${item.id})">🗑️</button></td></tr>`;
             });
         } else { section.style.display = "none"; }
         document.getElementById('tVol').innerText = tv.toLocaleString();
@@ -209,7 +192,7 @@
     }
 
     function clearLogs() {
-        if(confirm("ล้างข้อมูลประวัติวันนี้?")) {
+        if(confirm("ล้างข้อมูลทั้งหมด?")) {
             logs = [];
             localStorage.removeItem('bd_final_logs');
             renderLogs();
