@@ -41,4 +41,180 @@
         .total-box small { color: #b2bec3; font-size: 0.75rem; display: block; margin-bottom: 5px; }
         .total-box b { font-size: 1.4rem; font-family: 'Prompt'; color: #74b9ff; }
         
-        .method
+        .method-select { background: #fff9db; border-color: #ffe066; color: #f08c00; font-weight: 600; }
+        
+        /* ส่วนประวัติ */
+        .log-table { width: 100%; font-size: 0.85rem; border-collapse: collapse; }
+        .log-table th { text-align: left; padding: 10px; color: #b2bec3; font-weight: 400; border-bottom: 1px solid #f1f2f6; }
+        .log-table td { padding: 12px 10px; border-bottom: 1px solid #f9f9fb; }
+        .btn-del { color: #ff7675; cursor: pointer; border: none; background: none; font-size: 1.1rem; }
+    </style>
+</head>
+<body>
+
+<div class="header">
+    <h1>🌀 BD calc. ✨</h1>
+    <button id="syncBtn" onclick="syncData()" style="background:rgba(255,255,255,0.25); border:none; color:white; padding:8px 14px; border-radius:12px; cursor:pointer; font-size:0.85rem; font-weight:600;">🔄 ดึงสูตร</button>
+</div>
+
+<div class="container">
+    <div class="card">
+        <label>📋 เลือกสูตรอาหาร</label>
+        <select id="sheetSelect" onchange="loadMethod()"></select>
+        
+        <label>⚡ วิธีเพิ่มพลังงาน</label>
+        <select id="userMethod" class="method-select" onchange="calculate()">
+            <option value="เพิ่มวัตถุดิบ">เพิ่มวัตถุดิบ</option>
+            <option value="เติมอาหารทางการแพทย์">เติมอาหารทางการแพทย์</option>
+        </select>
+
+        <div style="display: flex; gap: 12px;">
+            <div style="flex: 2;"><label>🧪 ปริมาตร (ml)</label><input type="number" id="vol" value="1000" oninput="calculate()"></div>
+            <div style="flex: 1;"><label>🎯 Conc.</label>
+                <select id="conc" onchange="calculate()">
+                    <option value="1.0">1.0</option><option value="1.2" selected>1.2</option><option value="1.5">1.5</option><option value="2.0">2.0</option>
+                </select>
+            </div>
+        </div>
+
+        <label>🏢 ยี่ห้ออาหารทางการแพทย์</label>
+        <select id="brand" onchange="calculate()">
+            <option value="Gen-DM">Gen-DM</option><option value="Blendera">Blendera</option>
+        </select>
+    </div>
+
+    <div class="card">
+        <table class="calc-table"><tbody id="tbody"></tbody></table>
+        <div id="waterInfo" class="water-box">💧 พร้อมสำหรับการคำนวณ</div>
+        <button class="btn-main" onclick="addRecord()">💖 บันทึกมื้อนี้</button>
+    </div>
+
+    <div class="total-box">
+        <div><small>🥣 Vol รวมวันนี้</small><b id="tVol">0</b></div>
+        <div><small>🔥 Kcal รวมวันนี้</small><b id="tKcal">0</b></div>
+    </div>
+
+    <div id="logSection" style="display:none; margin-top:20px;">
+        <label style="margin-bottom:10px;">🕒 ประวัติวันนี้</label>
+        <div class="card" style="padding:10px;">
+            <table class="log-table">
+                <thead><tr><th>เวลา</th><th>Vol</th><th>Kcal</th><th></th></tr></thead>
+                <tbody id="logBody"></tbody>
+            </table>
+            <center><button onclick="clearLogs()" style="margin-top:15px; border:none; background:none; color:#b2bec3; padding:10px; cursor:pointer; font-size:0.8rem;">🗑️ ล้างประวัติทั้งหมด</button></center>
+        </div>
+    </div>
+</div>
+
+<script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzWeMeP_SFHgV_MWXxDhK-XlCBKCu28MAOIRAZx1_Q_jsSDcipTPzjF-K_s2azxtx5H/exec";
+    let db = JSON.parse(localStorage.getItem('bd_final_db')) || {};
+    let logs = JSON.parse(localStorage.getItem('bd_final_logs')) || [];
+
+    window.onload = () => { renderMenu(); renderLogs(); };
+
+    async function syncData() {
+        const btn = document.getElementById('syncBtn');
+        btn.innerText = "⏳...";
+        try {
+            const res = await fetch(`${SCRIPT_URL}?action=getSheets`, { method: 'GET', redirect: 'follow' });
+            const names = await res.json();
+            let newDb = {};
+            for (let n of names) {
+                const d = await fetch(`${SCRIPT_URL}?action=getIngredients&name=${encodeURIComponent(n)}`, { method: 'GET', redirect: 'follow' });
+                newDb[n] = await d.json();
+            }
+            db = newDb;
+            localStorage.setItem('bd_final_db', JSON.stringify(db));
+            renderMenu();
+            alert("✅ อัปเดตข้อมูลสูตรแล้ว");
+        } catch(e) { alert("❌ เชื่อมต่อผิดพลาด"); }
+        btn.innerText = "🔄 ดึงสูตร";
+    }
+
+    function renderMenu() {
+        const s = document.getElementById('sheetSelect');
+        s.innerHTML = '<option disabled selected>--- เลือกสูตร ---</option>';
+        Object.keys(db).forEach(n => s.add(new Option(n, n)));
+    }
+
+    function loadMethod() {
+        const name = document.getElementById('sheetSelect').value;
+        if(db[name]) {
+            const m = db[name].method.toString();
+            document.getElementById('userMethod').value = m.includes("เติม") ? "เติมอาหารทางการแพทย์" : "เพิ่มวัตถุดิบ";
+        }
+        calculate();
+    }
+
+    function calculate() {
+        const name = document.getElementById('sheetSelect').value;
+        const vol = parseFloat(document.getElementById('vol').value) || 0;
+        const conc = parseFloat(document.getElementById('conc').value);
+        const brand = document.getElementById('brand').value;
+        const method = document.getElementById('userMethod').value;
+        if(!db[name]) return;
+
+        let html = "", totalBaseWeight = 0;
+        db[name].list.forEach(i => {
+            let amt = (method === "เพิ่มวัตถุดิบ") ? (i.base * (vol/1000) * conc) : (i.base * (vol/1000));
+            totalBaseWeight += amt;
+            html += `<tr><td>${i.name}</td><td>${amt.toLocaleString(undefined,{minimumFractionDigits:1})} ${i.unit}</td></tr>`;
+        });
+
+        let extraMed = 0;
+        if(method === "เติมอาหารทางการแพทย์") {
+            let extraKcal = (vol * conc) - vol;
+            let kps = (brand === "Blendera") ? 37.33 : 36;
+            let wps = (brand === "Blendera") ? 8.33 : 8;
+            extraMed = Math.max(0, (extraKcal / kps) * wps);
+            html += `<tr style="color:#e67e22; font-weight:bold;"><td>${brand} (เติมเพิ่ม)</td><td>${extraMed.toFixed(1)} กรัม</td></tr>`;
+        }
+        document.getElementById('tbody').innerHTML = html;
+        let water = vol - totalBaseWeight - (extraMed * 0.7);
+        document.getElementById('waterInfo').innerText = `💧 น้ำที่ใช้ ~ ${Math.max(0, water).toFixed(0)} ml (เติมจนครบ ${vol} ml)`;
+    }
+
+    function addRecord() {
+        const v = parseFloat(document.getElementById('vol').value) || 0;
+        const c = parseFloat(document.getElementById('conc').value);
+        if(v <= 0 || !document.getElementById('sheetSelect').value) return;
+        const now = new Date();
+        const time = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
+        logs.push({ time: time, vol: v, kcal: v*c, id: Date.now() });
+        localStorage.setItem('bd_final_logs', JSON.stringify(logs));
+        renderLogs();
+    }
+
+    function renderLogs() {
+        const body = document.getElementById('logBody');
+        const section = document.getElementById('logSection');
+        let tv = 0, tk = 0;
+        body.innerHTML = "";
+        if(logs.length > 0) {
+            section.style.display = "block";
+            logs.forEach(item => {
+                tv += item.vol; tk += item.kcal;
+                body.innerHTML += `<tr><td>${item.time}</td><td>${item.vol} ml</td><td>${item.kcal} kcal</td><td><button class="btn-del" onclick="deleteEntry(${item.id})">×</button></td></tr>`;
+            });
+        } else { section.style.display = "none"; }
+        document.getElementById('tVol').innerText = tv.toLocaleString();
+        document.getElementById('tKcal').innerText = tk.toLocaleString();
+    }
+
+    function deleteEntry(id) {
+        logs = logs.filter(i => i.id !== id);
+        localStorage.setItem('bd_final_logs', JSON.stringify(logs));
+        renderLogs();
+    }
+
+    function clearLogs() {
+        if(confirm("ล้างข้อมูลประวัติวันนี้?")) {
+            logs = [];
+            localStorage.removeItem('bd_final_logs');
+            renderLogs();
+        }
+    }
+</script>
+</body>
+</html>
