@@ -3,71 +3,50 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    
     <title>BD calc</title>
-    <meta name="apple-mobile-web-app-title" content="BD calc">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="default">
-
-    <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/7065/7065270.png">
-    <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/7065/7065270.png">
-    
-    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;600&family=Prompt:wght@400;600&display=swap" rel="stylesheet">
-    
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&family=Prompt:wght@600&display=swap" rel="stylesheet">
     <style>
-        :root { --primary-purple: #a29bfe; --soft-bg: #f0f2f5; --text-main: #2d3436; --accent-pink: #ff7675; }
-        body { font-family: 'Sarabun', sans-serif; background-color: var(--soft-bg); margin: 0; color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
-        
-        /* Header */
-        .app-header { width: 100%; background: var(--primary-purple); padding: env(safe-area-inset-top) 20px 15px 20px; color: white; position: sticky; top: 0; z-index: 1000; box-shadow: 0 2px 10px rgba(0,0,0,0.1); box-sizing: border-box; }
-        .header-content { max-width: 600px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; width: 100%; }
-        .header-content h1 { margin: 0; font-size: 1.4rem; font-family: 'Prompt'; }
-
-        /* Content */
-        .content-body { width: 100%; max-width: 600px; padding: 15px; box-sizing: border-box; }
-        .card { background: white; border-radius: 20px; padding: 20px; margin-bottom: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.04); }
-        
-        label { font-size: 0.85rem; color: #636e72; display: block; margin-bottom: 6px; font-weight: 600; }
-        select, input { width: 100%; padding: 14px; border: 1.5px solid #edf2f7; border-radius: 12px; font-size: 16px; font-family: 'Sarabun'; background: #fafafa; box-sizing: border-box; margin-bottom: 12px; color: var(--text-main); outline: none; -webkit-appearance: none; }
-        
-        /* Table */
+        :root { --primary: #a29bfe; --bg: #f0f2f5; --text: #2d3436; --accent: #ff7675; }
+        body { font-family: 'Sarabun', sans-serif; background: var(--bg); margin: 0; color: var(--text); padding-bottom: 30px; }
+        .header { background: var(--primary); padding: 15px; color: white; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        .container { max-width: 600px; margin: 0 auto; padding: 15px; }
+        .card { background: white; border-radius: 20px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        label { font-size: 0.85rem; color: #636e72; font-weight: 600; display: block; margin-bottom: 5px; }
+        select, input { width: 100%; padding: 12px; border: 1px solid #edf2f7; border-radius: 10px; margin-bottom: 10px; font-size: 16px; box-sizing: border-box; background: #fafafa; outline: none; }
         .calc-table { width: 100%; border-collapse: collapse; }
-        .calc-table tr td { padding: 14px 8px; border-bottom: 1px solid #f1f2f6; }
-        .calc-table tr td:last-child { text-align: right; font-family: 'Prompt'; font-weight: 600; color: #6c5ce7; }
-        
-        .water-box { background: #fff0f3; color: #e84393; padding: 16px; border-radius: 15px; text-align: center; font-weight: 600; margin: 15px 0; border: 1.5px dashed #ff7675; }
-        .btn-add { width: 100%; padding: 18px; background: linear-gradient(135deg, #ff7675 0%, #ff6b6b 100%); color: white; border: none; border-radius: 50px; font-size: 1.2rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 15px rgba(255, 118, 117, 0.4); transition: 0.2s; }
-        .btn-add:active { transform: scale(0.98); }
-
-        /* Summary Footer */
-        .total-card { background: #2d3436; color: white; padding: 25px; border-radius: 25px; display: flex; justify-content: space-around; margin: 20px 0; text-align: center; box-shadow: 0 8px 20px rgba(0,0,0,0.15); }
-        .total-card small { display: block; color: #b2bec3; margin-bottom: 5px; }
-        .total-card b { font-size: 1.8rem; font-family: 'Prompt'; display: block; }
-        
-        .btn-sync { background: rgba(255,255,255,0.2); border: none; color: white; border-radius: 12px; padding: 8px 12px; cursor: pointer; font-size: 0.9rem; font-family: 'Prompt'; }
-        
-        /* Status Tag */
-        .mode-tag { font-size: 0.7rem; background: #55efc4; color: #00b894; padding: 2px 8px; border-radius: 10px; font-weight: bold; margin-left: 5px; vertical-align: middle; }
+        .calc-table td { padding: 12px 5px; border-bottom: 1px solid #eee; }
+        .calc-table td:last-child { text-align: right; color: #6c5ce7; font-weight: 600; font-family: 'Prompt'; }
+        .water-box { background: #fff0f3; color: #e84393; padding: 15px; border-radius: 15px; text-align: center; font-weight: 600; margin-top: 15px; border: 1px dashed #ff7675; }
+        .btn-main { width: 100%; padding: 18px; background: var(--accent); color: white; border: none; border-radius: 50px; font-size: 1.1rem; font-weight: 600; cursor: pointer; margin-top: 10px; box-shadow: 0 4px 10px rgba(255,118,117,0.3); }
+        .total-box { background: #2d3436; color: white; padding: 20px; border-radius: 20px; display: flex; justify-content: space-around; text-align: center; margin-top: 10px; }
+        .total-box b { font-size: 1.5rem; display: block; font-family: 'Prompt'; color: #a29bfe; }
+        .method-select { background: #fff9db; border: 1.5px solid #ffe066; font-weight: 600; color: #f08c00; }
+        .log-table { width: 100%; font-size: 0.9rem; border-collapse: collapse; margin-top: 10px; }
+        .log-table th { text-align: left; padding: 8px; border-bottom: 2px solid #eee; }
+        .log-table td { padding: 10px 8px; border-bottom: 1px solid #f9f9f9; }
+        .btn-del { color: #ff7675; cursor: pointer; font-size: 1.1rem; border: none; background: none; }
     </style>
 </head>
 <body>
 
-<div class="app-header">
-    <div class="header-content">
-        <div>
-            <h1>BD calc. <span class="mode-tag">Offline</span></h1>
-        </div>
-        <button class="btn-sync" onclick="syncData()">🔄 อัปเดตสูตร</button>
-    </div>
+<div class="header">
+    <h1 style="margin:0; font-size:1.2rem; font-family:'Prompt'">BD calc.</h1>
+    <button id="syncBtn" onclick="syncData()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:8px 12px; border-radius:10px; cursor:pointer;">🔄 อัปเดตสูตร</button>
 </div>
 
-<div class="content-body">
+<div class="container">
     <div class="card">
-        <label>สูตรอาหาร (ดึงจากเครื่อง ✅)</label>
-        <select id="sheetSelect" onchange="calculate()"></select>
+        <label>เลือกสูตรอาหาร</label>
+        <select id="sheetSelect" onchange="loadMethod()"></select>
         
+        <label>วิธีเพิ่มพลังงาน (ตรวจสอบจากช่อง B4)</label>
+        <select id="userMethod" class="method-select" onchange="calculate()">
+            <option value="เพิ่มวัตถุดิบ">เพิ่มวัตถุดิบ (คูณ Conc. เข้าวัตถุดิบ)</option>
+            <option value="เติมอาหารทางการแพทย์">เติมอาหารทางการแพทย์ (วัตถุดิบคงเดิม)</option>
+        </select>
+
         <div style="display: flex; gap: 10px;">
-            <div style="flex: 2;"><label>ปริมาตร (ml)</label><input type="number" id="vol" value="1000" inputmode="decimal" oninput="calculate()"></div>
+            <div style="flex: 2;"><label>ปริมาตร (ml)</label><input type="number" id="vol" value="1000" oninput="calculate()"></div>
             <div style="flex: 1;"><label>Conc.</label>
                 <select id="conc" onchange="calculate()">
                     <option value="1.0">1.0</option><option value="1.2" selected>1.2</option><option value="1.5">1.5</option><option value="2.0">2.0</option>
@@ -83,121 +62,73 @@
 
     <div class="card">
         <table class="calc-table"><tbody id="tbody"></tbody></table>
-        <div id="waterInfo" class="water-box">กรุณาเลือกสูตร...</div>
-        <button class="btn-add" onclick="addRecord()">✨ บันทึกยอดรวมวันนี้</button>
+        <div id="waterInfo" class="water-box">กรุณากดปุ่มอัปเดตสูตร...</div>
+        <button class="btn-main" onclick="addRecord()">✨ บันทึกมื้อนี้</button>
     </div>
 
-    <div class="total-card">
-        <div><small>ยอดรวม Vol (ml)</small><b id="totalVol">0</b></div>
-        <div><small>ยอดรวม Kcal</small><b id="totalKcal">0</b></div>
+    <div class="total-box">
+        <div><small>Vol รวมวันนี้</small><b id="tVol">0</b></div>
+        <div><small>Kcal รวมวันนี้</small><b id="tKcal">0</b></div>
     </div>
-    
-    <center>
-        <button onclick="clearRecords()" style="background:none; border:none; color:#b2bec3; font-size:0.8rem; padding:10px;">🗑️ ล้างสถิติที่บันทึกไว้</button>
-    </center>
+
+    <div class="card" id="logSection" style="display:none; margin-top:15px;">
+        <label>ประวัติการบันทึกวันนี้</label>
+        <table class="log-table">
+            <thead><tr><th>เวลา</th><th>Vol</th><th>Kcal</th><th>ลบ</th></tr></thead>
+            <tbody id="logBody"></tbody>
+        </table>
+        <center><button onclick="clearLogs()" style="margin-top:20px; border:none; background:#eee; color:#666; padding:8px 20px; border-radius:50px; cursor:pointer;">🗑️ ล้างข้อมูลทั้งหมด</button></center>
+    </div>
 </div>
 
 <script>
+    // URL ของคุณที่เช็คแล้วว่าถูกต้อง
     const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzWeMeP_SFHgV_MWXxDhK-XlCBKCu28MAOIRAZx1_Q_jsSDcipTPzjF-K_s2azxtx5H/exec";
+    
+    // ใช้ชื่อกลางเพื่อเรียกข้อมูลกลับมา
+    let db = JSON.parse(localStorage.getItem('bd_final_db')) || {};
+    let logs = JSON.parse(localStorage.getItem('bd_final_logs')) || [];
 
-    // ดึงข้อมูลจาก Memory เครื่อง
-    let db = JSON.parse(localStorage.getItem('bd_calc_db')) || {};
-    let savedRecords = JSON.parse(localStorage.getItem('bd_daily_logs')) || [];
-
-    window.onload = () => {
-        renderDropdown();
-        updateSummary();
-        if (Object.keys(db).length === 0) syncData(); // ซิงค์ครั้งแรกถ้ายังไม่มีข้อมูล
+    window.onload = () => { 
+        renderMenu(); 
+        renderLogs(); 
+        if(!Object.keys(db).length) {
+            document.getElementById('waterInfo').innerText = "ยังไม่มีข้อมูลสูตร กรุณากดอัปเดต";
+        }
     };
 
-    // ฟังก์ชันซิงค์ข้อมูลจาก Google Sheets (ออนไลน์ครั้งเดียว)
     async function syncData() {
-        const btn = document.querySelector('.btn-sync');
-        const oldText = btn.innerText;
-        btn.innerText = "⏳ โหลด...";
+        const btn = document.getElementById('syncBtn');
+        btn.innerText = "⏳ กำลังโหลด...";
         try {
-            const resNames = await fetch(`${SCRIPT_URL}?action=getSheets`);
-            const names = await resNames.json();
+            const res = await fetch(`${SCRIPT_URL}?action=getSheets`, { method: 'GET', redirect: 'follow' });
+            if (!res.ok) throw new Error();
+            const names = await res.json();
             
-            let tempDB = {};
-            for (let name of names) {
-                const resIng = await fetch(`${SCRIPT_URL}?action=getIngredients&name=${encodeURIComponent(name)}`);
-                tempDB[name] = await resIng.json();
+            let newDb = {};
+            for (let n of names) {
+                const d = await fetch(`${SCRIPT_URL}?action=getIngredients&name=${encodeURIComponent(n)}`, { method: 'GET', redirect: 'follow' });
+                newDb[n] = await d.json();
             }
             
-            db = tempDB;
-            localStorage.setItem('bd_calc_db', JSON.stringify(db));
-            renderDropdown();
-            alert("อัปเดตสูตรอาหารสำเร็จ! ตอนนี้ใช้งานออฟไลน์ได้ทันที");
-        } catch (e) {
-            alert("ไม่สามารถอัปเดตได้ กรุณาเชื่อมต่ออินเทอร์เน็ต");
+            db = newDb;
+            localStorage.setItem('bd_final_db', JSON.stringify(db));
+            renderMenu();
+            alert("✅ อัปเดตสูตรอาหารทั้งหมดเรียบร้อย!");
+        } catch(e) {
+            alert("❌ เชื่อมต่อผิดพลาด: โปรดเช็คว่าใน Google Script ตั้งค่าเป็น 'Anyone' (ทุกคน) หรือยัง?");
         }
-        btn.innerText = oldText;
+        btn.innerText = "🔄 อัปเดตสูตร";
     }
 
-    function renderDropdown() {
-        let select = document.getElementById('sheetSelect');
-        let names = Object.keys(db);
-        if (names.length === 0) {
-            select.innerHTML = '<option>กดปุ่มอัปเดตสูตรอาหารด้านบน</option>';
-            return;
-        }
-        select.innerHTML = '<option value="" disabled selected>--- เลือกสูตรอาหาร ---</option>';
-        names.forEach(n => select.add(new Option(n, n)));
+    function renderMenu() {
+        const s = document.getElementById('sheetSelect');
+        s.innerHTML = '<option disabled selected>--- เลือกสูตร ---</option>';
+        Object.keys(db).forEach(n => s.add(new Option(n, n)));
     }
 
-    function calculate() {
-        let name = document.getElementById('sheetSelect').value;
-        let vol = parseFloat(document.getElementById('vol').value) || 0;
-        let conc = parseFloat(document.getElementById('conc').value);
-        let brand = document.getElementById('brand').value;
-        
-        if (!db[name]) return;
-
-        let html = "", totalBaseWeight = 0;
-        db[name].forEach(item => {
-            let amt = (item.base / 1000) * vol;
-            totalBaseWeight += amt;
-            html += `<tr><td>${item.name}</td><td>${amt.toLocaleString(undefined,{minimumFractionDigits:1})} ${item.unit}</td></tr>`;
-        });
-
-        let extraKcal = (vol * conc) - vol;
-        let medicalWeight = 0;
-        if (extraKcal > 0) {
-            let kps = (brand === "Blendera") ? 37.33 : 36;
-            let wps = (brand === "Blendera") ? 8.33 : 8;
-            medicalWeight = (extraKcal / kps) * wps;
-            html += `<tr style="color:#e67e22; font-weight:bold;"><td>${brand}</td><td>${medicalWeight.toFixed(1)} กรัม</td></tr>`;
-        }
-        document.getElementById('tbody').innerHTML = html;
-        let water = vol - totalBaseWeight - (medicalWeight * 0.7);
-        document.getElementById('waterInfo').innerText = `💧 เติมน้ำจนครบ ${vol} ml (น้ำ ~ ${Math.max(0, water).toFixed(0)} ml)`;
-    }
-
-    function addRecord() {
-        let vol = parseFloat(document.getElementById('vol').value) || 0;
-        let conc = parseFloat(document.getElementById('conc').value);
-        if(vol <= 0) return;
-        savedRecords.push({ vol, kcal: vol * conc });
-        localStorage.setItem('bd_daily_logs', JSON.stringify(savedRecords));
-        updateSummary();
-        alert("บันทึกเรียบร้อย ✅");
-    }
-
-    function updateSummary() {
-        let sumV = 0, sumK = 0;
-        savedRecords.forEach(r => { sumV += r.vol; sumK += r.kcal; });
-        document.getElementById('totalVol').innerText = sumV.toLocaleString();
-        document.getElementById('totalKcal').innerText = sumK.toLocaleString();
-    }
-
-    function clearRecords() {
-        if(confirm("ต้องการล้างสถิติที่บันทึกไว้ทั้งหมดหรือไม่?")) {
-            savedRecords = [];
-            localStorage.removeItem('bd_daily_logs');
-            updateSummary();
-        }
-    }
-</script>
-</body>
-</html>
+    function loadMethod() {
+        const name = document.getElementById('sheetSelect').value;
+        if(db[name]) {
+            const methodInSheet = db[name].method.toString().trim();
+            // ตรวจสอบจากคำ
