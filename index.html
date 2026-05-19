@@ -344,4 +344,171 @@ function clearLogs() {
 //  PAGE 2 — MED BRANDS (จาก Spreadsheet)
 // ══════════════════════════════════════
 const BOOSTERS = {
-    w
+    whey:     { name:"Whey Protein",              icon:"🥛", proteinPerG:0.80, note:"ผงเวย์โปรตีน" },
+    eggwhite: { name:"ไข่ขาว (ต้ม/พาสเจอไรซ์)", icon:"🥚", proteinPerG:0.11, note:"ไข่ขาว 1 ฟอง ≈ 33 g" }
+};
+
+let medSelectedIdx = 0;  // index ของ brand ที่เลือกใน medBrandsDb
+let medConc = 1.2;
+
+function renderMedBrands() {
+    const grid = document.getElementById('brandGrid');
+    if (!medBrandsDb || medBrandsDb.length === 0) {
+        grid.innerHTML = `<div class="loading-box" style="grid-column:1/-1;">⏳ ยังไม่มีข้อมูลยี่ห้อ<br><small>กด 🔄 อัปเดตสูตร เพื่อโหลด</small></div>`;
+        return;
+    }
+    // ไอคอนตาม type
+    const icon = b => b.type === 'RTF' ? '🧪' : '🥛';
+    const sub  = b => b.type === 'RTF'
+        ? `${b.kcalPerMl} kcal/ml • RTF`
+        : `${b.kcalPerG} kcal/g • ผง`;
+
+    grid.innerHTML = medBrandsDb.map((b, i) => `
+        <div class="brand-btn${i === 0 ? ' active' : ''}" data-idx="${i}" onclick="medSelectBrand(this)">
+            <span class="b-icon">${icon(b)}</span>${b.name}<div class="b-sub">${sub(b)}</div>
+        </div>
+    `).join('');
+
+    medSelectedIdx = 0;
+    updateConcLock();
+}
+
+function medSelectBrand(el) {
+    document.querySelectorAll('#brandGrid .brand-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    medSelectedIdx = parseInt(el.dataset.idx);
+    updateConcLock();
+}
+
+function updateConcLock() {
+    if (!medBrandsDb[medSelectedIdx]) return;
+    const isRTF = medBrandsDb[medSelectedIdx].type === 'RTF';
+    document.getElementById('concLockNote').textContent = isRTF ? "(RTF — ไม่ใช้)" : "";
+    document.querySelectorAll('#medConcGrid .conc-btn').forEach(b => {
+        b.style.opacity = isRTF ? '0.35' : '1';
+        b.style.pointerEvents = isRTF ? 'none' : 'auto';
+    });
+}
+
+function medSelectConc(el) {
+    document.querySelectorAll('#medConcGrid .conc-btn').forEach(b => b.classList.remove('active'));
+    el.classList.add('active');
+    medConc = parseFloat(el.dataset.conc);
+}
+
+function medCalculate() {
+    const errBox = document.getElementById('medError');
+
+    if (!medBrandsDb || medBrandsDb.length === 0) {
+        errBox.className = 'error-box';
+        errBox.innerHTML = '❌ ยังไม่มีข้อมูลยี่ห้อ — กด <b>🔄 อัปเดตสูตร</b> ก่อนครับ';
+        return;
+    }
+    errBox.className = 'hidden';
+
+    const brand         = medBrandsDb[medSelectedIdx];
+    const targetKcal    = parseFloat(document.getElementById('mKcal').value)    || 0;
+    const meals         = parseInt(document.getElementById('mMeals').value)      || 1;
+    const targetProtein = parseFloat(document.getElementById('mProtein').value) || 0;
+
+    if (targetKcal <= 0) { alert("กรุณากรอกพลังงานเป้าหมาย"); return; }
+
+    let r = {};
+
+    if (brand.type === 'RTF') {
+        const totalMl      = targetKcal / brand.kcalPerMl;
+        const totalProtein = (totalMl / 100) * brand.proteinPer100ml;
+        const freeWater    = (totalMl / 100) * brand.waterPer100ml;
+        r = {
+            brand: brand.name, type: 'RTF',
+            totalMl, mlPerMeal: totalMl / meals,
+            totalKcal: targetKcal, kcalPerMeal: targetKcal / meals,
+            totalProtein, proteinPerMeal: totalProtein / meals,
+            freeWater, flushWater: totalMl * 0.1,
+            powderG: null, powderPerMeal: null, scoops: null, scoopsPerMeal: null, meals
+        };
+    } else {
+        const totalPowderG = targetKcal / brand.kcalPerG;
+        const volTarget    = targetKcal / (brand.kcalPerG * medConc);
+        const waterToAdd   = Math.max(0, volTarget - totalPowderG * 0.6);
+        const totalProtein = totalPowderG * brand.proteinPerG;
+        const scoops       = brand.gramPerScoop > 0 ? totalPowderG / brand.gramPerScoop : null;
+        r = {
+            brand: brand.name, type: 'POWDER',
+            totalMl: volTarget, mlPerMeal: volTarget / meals,
+            totalKcal: targetKcal, kcalPerMeal: targetKcal / meals,
+            totalProtein, proteinPerMeal: totalProtein / meals,
+            freeWater: waterToAdd, flushWater: waterToAdd,
+            powderG: totalPowderG, powderPerMeal: totalPowderG / meals,
+            scoops, scoopsPerMeal: scoops ? scoops / meals : null, meals
+        };
+    }
+
+    // ── result card ──
+    const rc = document.getElementById('medResult');
+    rc.classList.remove('hidden');
+    document.getElementById('medGrid').innerHTML = `
+        <div class="res-item"><div class="rv purple">${r.totalMl.toFixed(0)}</div><div class="ru">ml</div><div class="rl">ปริมาตรรวม/วัน</div></div>
+        <div class="res-item"><div class="rv green">${r.totalKcal.toFixed(0)}</div><div class="ru">kcal</div><div class="rl">พลังงานรวม/วัน</div></div>
+        <div class="res-item"><div class="rv orange">${r.totalProtein.toFixed(1)}</div><div class="ru">g</div><div class="rl">โปรตีนรวม/วัน</div></div>
+        <div class="res-item"><div class="rv pink">${r.mlPerMeal.toFixed(0)}</div><div class="ru">ml/มื้อ</div><div class="rl">ปริมาตรต่อมื้อ (${r.meals} มื้อ)</div></div>
+    `;
+    let dets = `<div class="det-row"><span>🏥 สูตร</span><span class="dv">${r.brand}</span></div>`;
+    if (r.type === 'POWDER') {
+        const scoopText = r.scoops ? ` (${r.scoops.toFixed(1)} ช้อน)` : '';
+        const scoopPerMealText = r.scoopsPerMeal ? ` (${r.scoopsPerMeal.toFixed(1)} ช้อน)` : '';
+        dets += `
+            <div class="det-row"><span>🥄 ผงรวม/วัน</span><span class="dv">${r.powderG.toFixed(1)} g${scoopText}</span></div>
+            <div class="det-row"><span>🥄 ผง/มื้อ</span><span class="dv">${r.powderPerMeal.toFixed(1)} g${scoopPerMealText}</span></div>
+            <div class="det-row"><span>💧 น้ำที่เติม/วัน</span><span class="dv">${r.freeWater.toFixed(0)} ml</span></div>
+        `;
+    } else {
+        dets += `
+            <div class="det-row"><span>💧 Free water รวม</span><span class="dv">${r.freeWater.toFixed(0)} ml</span></div>
+            <div class="det-row"><span>💦 น้ำ flush (~10%)</span><span class="dv">${r.flushWater.toFixed(0)} ml</span></div>
+        `;
+    }
+    dets += `
+        <div class="det-row"><span>⚡ Kcal/มื้อ</span><span class="dv">${r.kcalPerMeal.toFixed(0)} kcal</span></div>
+        <div class="det-row"><span>💪 โปรตีน/มื้อ</span><span class="dv">${r.proteinPerMeal.toFixed(1)} g</span></div>
+    `;
+    document.getElementById('medDets').innerHTML = dets;
+
+    // ── protein top-up ──
+    const ps  = document.getElementById('medProtein');
+    const gap = targetProtein - r.totalProtein;
+    if (gap <= 0.5) {
+        ps.innerHTML = `<div class="ok-box">✅ โปรตีนเพียงพอ! ได้รับ ${r.totalProtein.toFixed(1)} g / เป้าหมาย ${targetProtein} g/วัน</div>`;
+    } else {
+        let ph = `<div class="prot-card"><div class="prot-title">⚠️ โปรตีนขาด ${gap.toFixed(1)} g/วัน — ต้องเสริม</div>`;
+        for (const [, b] of Object.entries(BOOSTERS)) {
+            const amt = gap / b.proteinPerG;
+            ph += `<div class="prot-opt">
+                <div style="font-size:1.7rem">${b.icon}</div>
+                <div>
+                    <div class="prot-name">${b.name}</div>
+                    <div class="prot-amt">${amt.toFixed(1)} g/วัน</div>
+                    <div class="prot-sub">${b.note} • ${(amt/r.meals).toFixed(1)} g/มื้อ</div>
+                </div>
+            </div>`;
+        }
+        ph += `</div>`;
+        ps.innerHTML = ph;
+    }
+
+    // ── meal table ──
+    const mc = document.getElementById('medMealCard');
+    mc.classList.remove('hidden');
+    let rows = "";
+    for (let i = 1; i <= r.meals; i++) {
+        const powderCell = r.type === 'POWDER'
+            ? `${r.powderPerMeal.toFixed(1)}g${r.scoopsPerMeal ? ` (${r.scoopsPerMeal.toFixed(1)} ช้อน)` : ''}`
+            : `${r.kcalPerMeal.toFixed(0)} kcal`;
+        rows += `<tr><td>มื้อที่ ${i}</td><td>${r.mlPerMeal.toFixed(0)}</td><td>${powderCell}</td><td>${r.proteinPerMeal.toFixed(1)} g</td></tr>`;
+    }
+    document.getElementById('medMealBody').innerHTML = rows;
+    rc.scrollIntoView({ behavior:'smooth', block:'start' });
+}
+</script>
+</body>
+</html>
