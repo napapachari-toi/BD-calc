@@ -428,14 +428,20 @@ function medCalculate() {
             powderG: null, powderPerMeal: null, scoops: null, scoopsPerMeal: null, meals
         };
     } else {
-        const totalPowderG = targetKcal / brand.kcalPerG;
-        const volTarget    = targetKcal / (brand.kcalPerG * medConc);
-        const waterToAdd   = Math.max(0, volTarget - totalPowderG * 0.6);
-        const totalProtein = totalPowderG * brand.proteinPerG;
+        const kcalPerG    = brand.kcalPerG > 10 ? brand.kcalPerG / 100 : brand.kcalPerG;
+        const proteinPerG = brand.proteinPerG > 1 ? brand.proteinPerG / 100 : brand.proteinPerG;
+        const mlPerG      = (brand.waterPer100ml && brand.waterPer100ml > 0)
+                            ? brand.waterPer100ml / 100 : 4.5;
+
+        const totalPowderG = targetKcal / kcalPerG;
+        const totalMl      = (totalPowderG * mlPerG) / medConc;
+        const waterToAdd   = Math.max(0, totalMl - totalPowderG);
+        const totalProtein = totalPowderG * proteinPerG;
         const scoops       = brand.gramPerScoop > 0 ? totalPowderG / brand.gramPerScoop : null;
+
         r = {
             brand: brand.name, type: 'POWDER',
-            totalMl: volTarget, mlPerMeal: volTarget / meals,
+            totalMl, mlPerMeal: totalMl / meals,
             totalKcal: targetKcal, kcalPerMeal: targetKcal / meals,
             totalProtein, proteinPerMeal: totalProtein / meals,
             freeWater: waterToAdd, flushWater: waterToAdd,
