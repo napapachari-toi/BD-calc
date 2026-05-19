@@ -5,13 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>BD calc</title>
     <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&family=Prompt:wght@600&display=swap" rel="stylesheet">
-    
     <link rel="apple-touch-icon" href="https://cdn-icons-png.flaticon.com/512/3221/3221626.png">
     <link rel="icon" type="image/png" href="https://cdn-icons-png.flaticon.com/512/3221/3221626.png">
 
     <style>
-        :root { --primary: #a29bfe; --bg: #f0f2f5; --text: #2d3436; --accent: #ff7675; }
-        body { font-family: 'Sarabun', sans-serif; background: var(--bg); margin: 0; color: var(--text); padding-bottom: 30px; }
+        :root { --primary: #a29bfe; --primary-dark: #6c5ce7; --bg: #f0f2f5; --text: #2d3436; --accent: #ff7675; }
+        body { font-family: 'Sarabun', sans-serif; background: var(--bg); margin: 0; color: var(--text); padding-bottom: 80px; }
         .header { background: var(--primary); padding: 15px; color: white; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
         .container { max-width: 600px; margin: 0 auto; padding: 15px; }
         .card { background: white; border-radius: 20px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
@@ -29,52 +28,103 @@
         .log-table th { text-align: left; padding: 8px; border-bottom: 2px solid #eee; }
         .log-table td { padding: 10px 8px; border-bottom: 1px solid #f9f9f9; }
         .btn-del { color: #ff7675; cursor: pointer; font-size: 1.1rem; border: none; background: none; }
+
+        /* ── Tab Bar ── */
+        .tab-bar { position: fixed; bottom: 0; left: 0; right: 0; background: white; display: flex; box-shadow: 0 -2px 10px rgba(0,0,0,0.08); z-index: 200; }
+        .tab-btn { flex: 1; padding: 10px 4px 12px; border: none; background: none; font-family: 'Sarabun', sans-serif; font-size: 0.72rem; color: #b2bec3; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 3px; transition: color 0.18s; }
+        .tab-btn .tab-icon { font-size: 1.35rem; }
+        .tab-btn.active { color: var(--primary-dark); font-weight: 600; }
+
+        /* ── Pages ── */
+        .page { display: none; }
+        .page.active { display: block; }
+
+        /* ══ MED PAGE ══ */
+        .med-card-title { font-family: 'Prompt', sans-serif; font-size: 0.95rem; color: var(--primary-dark); font-weight: 600; margin-bottom: 14px; }
+        .brand-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+        .brand-btn { border: 2px solid #edf2f7; background: #fafafa; border-radius: 12px; padding: 10px 6px; text-align: center; cursor: pointer; font-family: 'Sarabun', sans-serif; font-size: 0.78rem; font-weight: 600; color: #636e72; line-height: 1.4; transition: all 0.18s; }
+        .brand-btn .b-icon { font-size: 1.2rem; display: block; margin-bottom: 2px; }
+        .brand-btn .b-sub { font-size: 0.68rem; color: #b2bec3; font-weight: 400; }
+        .brand-btn.active { border-color: var(--primary-dark); background: linear-gradient(135deg, #f3f0ff, #ede7fe); color: var(--primary-dark); }
+        .conc-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 4px; }
+        .conc-btn { border: 2px solid #edf2f7; background: #fafafa; border-radius: 10px; padding: 10px 4px; text-align: center; cursor: pointer; font-family: 'Prompt', sans-serif; font-size: 0.9rem; font-weight: 600; color: #636e72; transition: all 0.18s; }
+        .conc-btn.active { border-color: var(--accent); background: linear-gradient(135deg, #fff0ef, #ffe5e5); color: var(--accent); }
+        .med-row2 { display: flex; gap: 10px; }
+        .med-row2 > div { flex: 1; }
+        .res-card { background: linear-gradient(135deg, #2d3436, #3d3d5c); border-radius: 20px; padding: 20px; color: white; margin-bottom: 14px; }
+        .res-title { font-family: 'Prompt', sans-serif; font-size: 0.8rem; color: #a29bfe; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 14px; }
+        .res-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+        .res-item { background: rgba(255,255,255,0.07); border-radius: 14px; padding: 13px 10px; text-align: center; }
+        .rv { font-family: 'Prompt', sans-serif; font-size: 1.45rem; font-weight: 700; line-height: 1.1; }
+        .rv.purple { color: #a29bfe; } .rv.green { color: #55efc4; } .rv.orange { color: #fdcb6e; } .rv.pink { color: #fd79a8; }
+        .res-item .ru { font-size: 0.72rem; color: rgba(255,255,255,0.45); margin-top: 2px; }
+        .res-item .rl { font-size: 0.7rem; color: rgba(255,255,255,0.55); margin-top: 2px; }
+        .det-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,0.07); font-size: 0.87rem; }
+        .det-row:last-child { border-bottom: none; }
+        .det-row .dv { font-family: 'Prompt', sans-serif; font-weight: 600; color: #dfe6e9; font-size: 0.87rem; }
+        .prot-card { background: linear-gradient(135deg, #fff5f7, #fff0f8); border: 2px solid #ffb3cc; border-radius: 20px; padding: 18px 20px; margin-bottom: 14px; }
+        .prot-title { font-family: 'Prompt', sans-serif; font-size: 0.88rem; color: #c0392b; font-weight: 600; margin-bottom: 12px; }
+        .prot-opt { background: white; border-radius: 14px; padding: 13px; margin-bottom: 9px; display: flex; align-items: center; gap: 12px; box-shadow: 0 2px 6px rgba(255,100,150,0.08); border: 1.5px solid #ffe0ec; }
+        .prot-opt:last-child { margin-bottom: 0; }
+        .prot-name { font-weight: 700; font-size: 0.88rem; color: #e84393; }
+        .prot-amt { font-family: 'Prompt', sans-serif; font-size: 1.25rem; font-weight: 700; color: #c0392b; }
+        .prot-sub { font-size: 0.72rem; color: #b2bec3; }
+        .ok-box { background: linear-gradient(135deg, #f0fff4, #e8fff0); border: 2px solid #a8e6cf; border-radius: 16px; padding: 14px; text-align: center; color: #27ae60; font-weight: 600; font-size: 0.88rem; margin-bottom: 14px; }
+        .meal-tbl { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+        .meal-tbl th { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; padding: 9px 8px; text-align: left; font-family: 'Prompt', sans-serif; font-size: 0.76rem; }
+        .meal-tbl th:first-child { border-radius: 10px 0 0 10px; }
+        .meal-tbl th:last-child { border-radius: 0 10px 10px 0; }
+        .meal-tbl td { padding: 9px 8px; border-bottom: 1px solid #f0f2f5; }
+        .meal-tbl td:not(:first-child) { font-family: 'Prompt', sans-serif; font-weight: 600; color: var(--primary-dark); }
+        .meal-tbl tr:last-child td { border-bottom: none; }
+        .btn-calc { width: 100%; padding: 16px; background: linear-gradient(135deg, var(--accent), #e84393); color: white; border: none; border-radius: 50px; font-size: 1.05rem; font-weight: 700; font-family: 'Prompt', sans-serif; cursor: pointer; box-shadow: 0 5px 18px rgba(255,118,117,0.3); margin-bottom: 14px; }
+        .hidden { display: none !important; }
+        .loading-box { text-align: center; padding: 20px; color: #b2bec3; font-size: 0.88rem; }
+        .error-box { background: #fff5f5; border: 1.5px solid #ffcccc; border-radius: 12px; padding: 14px; color: #c0392b; font-size: 0.85rem; margin-bottom: 14px; }
     </style>
 </head>
 <body>
 
 <div class="header">
-    <h1 style="margin:0; font-size:1.2rem; font-family:'Prompt'">🥤 BD calc. ✨</h1>
+    <h1 style="margin:0; font-size:1.2rem; font-family:'Prompt'" id="pageTitle">🥤 BD calc. ✨</h1>
     <button id="syncBtn" onclick="syncData()" style="background:rgba(255,255,255,0.2); border:none; color:white; padding:8px 12px; border-radius:10px; cursor:pointer;">🔄 อัปเดตสูตร</button>
 </div>
 
+<!-- ════════════════════
+     PAGE 1 : สูตรอาหาร
+════════════════════ -->
+<div class="page active" id="page-recipe">
 <div class="container">
     <div class="card">
         <label>เลือกสูตรอาหาร</label>
         <select id="sheetSelect" onchange="loadMethod()"></select>
-        
         <label>วิธีเพิ่มพลังงาน</label>
         <select id="userMethod" class="method-select" onchange="calculate()">
             <option value="เพิ่มวัตถุดิบ">เพิ่มวัตถุดิบ</option>
             <option value="เติมอาหารทางการแพทย์">เติมอาหารทางการแพทย์</option>
         </select>
-
-        <div style="display: flex; gap: 10px;">
-            <div style="flex: 2;"><label>ปริมาตร (ml)</label><input type="number" id="vol" value="1000" oninput="calculate()"></div>
-            <div style="flex: 1;"><label>Conc.</label>
+        <div style="display:flex; gap:10px;">
+            <div style="flex:2;"><label>ปริมาตร (ml)</label><input type="number" id="vol" value="1000" oninput="calculate()"></div>
+            <div style="flex:1;"><label>Conc.</label>
                 <select id="conc" onchange="calculate()">
                     <option value="1.0">1.0</option><option value="1.2" selected>1.2</option><option value="1.5">1.5</option><option value="2.0">2.0</option>
                 </select>
             </div>
         </div>
-
         <label>ยี่ห้ออาหารทางการแพทย์</label>
         <select id="brand" onchange="calculate()">
             <option value="Gen-DM">Gen-DM</option><option value="Blendera">Blendera</option>
         </select>
     </div>
-
     <div class="card">
         <table class="calc-table"><tbody id="tbody"></tbody></table>
         <div id="waterInfo" class="water-box">กรุณากดปุ่มอัปเดตสูตร...</div>
         <button class="btn-main" onclick="addRecord()">✨ บันทึกมื้อนี้</button>
     </div>
-
     <div class="total-box">
         <div><small>Vol รวมวันนี้</small><b id="tVol">0</b></div>
         <div><small>Kcal รวมวันนี้</small><b id="tKcal">0</b></div>
     </div>
-
     <div class="card" id="logSection" style="display:none; margin-top:15px;">
         <label>ประวัติการบันทึกวันนี้</label>
         <table class="log-table">
@@ -84,120 +134,214 @@
         <center><button onclick="clearLogs()" style="margin-top:20px; border:none; background:#eee; color:#666; padding:8px 20px; border-radius:50px; cursor:pointer;">🗑️ ล้างข้อมูลทั้งหมด</button></center>
     </div>
 </div>
+</div>
+
+<!-- ════════════════════════════
+     PAGE 2 : อาหารทางการแพทย์
+════════════════════════════ -->
+<div class="page" id="page-med">
+<div class="container">
+
+    <div class="card">
+        <div class="med-card-title">🏥 เลือกสูตรอาหาร</div>
+        <div id="brandGrid" class="brand-grid">
+            <div class="loading-box" style="grid-column:1/-1;">⏳ กำลังโหลดข้อมูลยี่ห้อ...<br><small>กด "อัปเดตสูตร" ถ้ายังไม่โหลด</small></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="med-card-title">⚙️ ตั้งค่าการให้อาหาร</div>
+        <label>พลังงานเป้าหมายต่อวัน (kcal/day)</label>
+        <input type="number" id="mKcal" value="1500">
+        <div class="med-row2">
+            <div><label>จำนวนมื้อต่อวัน</label><input type="number" id="mMeals" value="4" min="1" max="12"></div>
+            <div><label>โปรตีนเป้าหมาย (g/day)</label><input type="number" id="mProtein" value="60"></div>
+        </div>
+        <label>ความเข้มข้น <span id="concLockNote" style="color:#e67e22; font-size:0.75rem;">(RTF — ไม่ใช้)</span></label>
+        <div class="conc-grid" id="medConcGrid">
+            <div class="conc-btn" data-conc="1.0" onclick="medSelectConc(this)">1.0×</div>
+            <div class="conc-btn active" data-conc="1.2" onclick="medSelectConc(this)">1.2×</div>
+            <div class="conc-btn" data-conc="1.5" onclick="medSelectConc(this)">1.5×</div>
+            <div class="conc-btn" data-conc="2.0" onclick="medSelectConc(this)">2.0×</div>
+        </div>
+    </div>
+
+    <button class="btn-calc" onclick="medCalculate()">🔢 คำนวณ</button>
+
+    <div id="medError" class="hidden"></div>
+    <div class="res-card hidden" id="medResult">
+        <div class="res-title">📊 ผลการคำนวณ</div>
+        <div class="res-grid" id="medGrid"></div>
+        <div id="medDets"></div>
+    </div>
+    <div id="medProtein"></div>
+    <div class="card hidden" id="medMealCard">
+        <div class="med-card-title">🍽️ แบ่งตามมื้อ</div>
+        <table class="meal-tbl">
+            <thead><tr><th>มื้อที่</th><th>ml</th><th>ผง / Kcal</th><th>โปรตีน</th></tr></thead>
+            <tbody id="medMealBody"></tbody>
+        </table>
+    </div>
+
+</div>
+</div>
+
+<!-- Tab Bar -->
+<nav class="tab-bar">
+    <button class="tab-btn active" onclick="switchTab('recipe', this)">
+        <span class="tab-icon">🥤</span>สูตรอาหาร
+    </button>
+    <button class="tab-btn" onclick="switchTab('med', this)">
+        <span class="tab-icon">🧮</span>อาหารทาง<br>การแพทย์
+    </button>
+</nav>
 
 <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzWeMeP_SFHgV_MWXxDhK-XlCBKCu28MAOIRAZx1_Q_jsSDcipTPzjF-K_s2azxtx5H/exec";
-    
-    let db = JSON.parse(localStorage.getItem('bd_final_db')) || {};
-    let logs = JSON.parse(localStorage.getItem('bd_final_logs')) || [];
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx4ihjFPhEF3KuK_XUwOmUC401D_4FfLooPSL9v386xIoflnW9aSrRCiiVWUgW79Bjd/exec";
 
-    window.onload = () => { renderMenu(); renderLogs(); };
+// ── Storage ──
+let db   = JSON.parse(localStorage.getItem('bd_final_db'))       || {};
+let logs = JSON.parse(localStorage.getItem('bd_final_logs'))      || [];
+// medBrandsDb: array of brand objects from Spreadsheet
+let medBrandsDb = JSON.parse(localStorage.getItem('bd_med_brands')) || [];
 
-    async function syncData() {
-        const btn = document.getElementById('syncBtn');
-        btn.innerText = "⏳...";
-        try {
-            const res = await fetch(`${SCRIPT_URL}?action=getSheets`, { method: 'GET', redirect: 'follow' });
-            const names = await res.json();
-            let newDb = {};
-            for (let n of names) {
-                const d = await fetch(`${SCRIPT_URL}?action=getIngredients&name=${encodeURIComponent(n)}`, { method: 'GET', redirect: 'follow' });
-                newDb[n] = await d.json();
-            }
-            db = newDb;
-            localStorage.setItem('bd_final_db', JSON.stringify(db));
-            renderMenu();
-            alert("✅ อัปเดตสำเร็จ!");
-        } catch(e) {
-            alert("❌ เชื่อมต่อผิดพลาด: ตรวจสอบการตั้งค่า Deploy เป็น Anyone");
+// ── Tab ──
+function switchTab(name, btn) {
+    document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+    document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+    document.getElementById('page-' + name).classList.add('active');
+    btn.classList.add('active');
+    const isRecipe = name === 'recipe';
+    document.getElementById('pageTitle').textContent = isRecipe ? '🥤 BD calc. ✨' : '🧮 อาหารทางการแพทย์';
+    document.getElementById('syncBtn').style.display = '';
+}
+
+window.onload = () => {
+    renderMenu();
+    renderLogs();
+    renderMedBrands(); // render จาก cache ถ้ามี
+};
+
+// ══════════════════════════════════════
+//  SYNC — ดึงข้อมูลทั้งหมดพร้อมกัน
+// ══════════════════════════════════════
+async function syncData() {
+    const btn = document.getElementById('syncBtn');
+    btn.innerText = "⏳...";
+    try {
+        // 1. ดึงรายชื่อ sheet สูตรอาหาร
+        const res   = await fetch(`${SCRIPT_URL}?action=getSheets`, { method:'GET', redirect:'follow' });
+        const names = await res.json();
+        let newDb = {};
+        for (let n of names) {
+            const d  = await fetch(`${SCRIPT_URL}?action=getIngredients&name=${encodeURIComponent(n)}`, { method:'GET', redirect:'follow' });
+            newDb[n] = await d.json();
         }
-        btn.innerText = "🔄 อัปเดตสูตร";
-    }
+        db = newDb;
+        localStorage.setItem('bd_final_db', JSON.stringify(db));
+        renderMenu();
 
-    function renderMenu() {
-        const s = document.getElementById('sheetSelect');
-        s.innerHTML = '<option disabled selected>--- เลือกสูตร ---</option>';
-        Object.keys(db).forEach(n => s.add(new Option(n, n)));
-    }
+        // 2. ดึงข้อมูลยี่ห้ออาหารทางการแพทย์
+        const mRes = await fetch(`${SCRIPT_URL}?action=getMedBrands`, { method:'GET', redirect:'follow' });
+        const mData = await mRes.json();
 
-    function loadMethod() {
-        const name = document.getElementById('sheetSelect').value;
-        if(db[name]) {
-            const m = db[name].method.toString();
-            document.getElementById('userMethod').value = m.includes("เติม") ? "เติมอาหารทางการแพทย์" : "เพิ่มวัตถุดิบ";
+        if (mData.error) {
+            alert("⚠️ โหลดยี่ห้ออาหารทางการแพทย์ไม่ได้: " + mData.error);
+        } else {
+            medBrandsDb = mData;
+            localStorage.setItem('bd_med_brands', JSON.stringify(medBrandsDb));
+            renderMedBrands();
         }
-        calculate();
+
+        alert("✅ อัปเดตสำเร็จ!");
+    } catch(e) {
+        alert("❌ เชื่อมต่อผิดพลาด: ตรวจสอบการตั้งค่า Deploy เป็น Anyone");
     }
+    btn.innerText = "🔄 อัปเดตสูตร";
+}
 
-    function calculate() {
-        const name = document.getElementById('sheetSelect').value;
-        const vol = parseFloat(document.getElementById('vol').value) || 0;
-        const conc = parseFloat(document.getElementById('conc').value);
-        const brand = document.getElementById('brand').value;
-        const method = document.getElementById('userMethod').value;
-        if(!db[name]) return;
-
-        let html = "", totalBaseWeight = 0;
-        db[name].list.forEach(i => {
-            let amt = (method === "เพิ่มวัตถุดิบ") ? (i.base * (vol/1000) * conc) : (i.base * (vol/1000));
-            totalBaseWeight += amt;
-            html += `<tr><td>${i.name}</td><td>${amt.toLocaleString(undefined,{minimumFractionDigits:1})} ${i.unit}</td></tr>`;
+// ══════════════════════════════════════
+//  PAGE 1 — RECIPE (เดิม ไม่เปลี่ยน)
+// ══════════════════════════════════════
+function renderMenu() {
+    const s = document.getElementById('sheetSelect');
+    s.innerHTML = '<option disabled selected>--- เลือกสูตร ---</option>';
+    Object.keys(db).forEach(n => s.add(new Option(n, n)));
+}
+function loadMethod() {
+    const name = document.getElementById('sheetSelect').value;
+    if(db[name]) {
+        const m = db[name].method.toString();
+        document.getElementById('userMethod').value = m.includes("เติม") ? "เติมอาหารทางการแพทย์" : "เพิ่มวัตถุดิบ";
+    }
+    calculate();
+}
+function calculate() {
+    const name   = document.getElementById('sheetSelect').value;
+    const vol    = parseFloat(document.getElementById('vol').value) || 0;
+    const conc   = parseFloat(document.getElementById('conc').value);
+    const brand  = document.getElementById('brand').value;
+    const method = document.getElementById('userMethod').value;
+    if(!db[name]) return;
+    let html = "", totalBaseWeight = 0;
+    db[name].list.forEach(i => {
+        let amt = (method === "เพิ่มวัตถุดิบ") ? (i.base*(vol/1000)*conc) : (i.base*(vol/1000));
+        totalBaseWeight += amt;
+        html += `<tr><td>${i.name}</td><td>${amt.toLocaleString(undefined,{minimumFractionDigits:1})} ${i.unit}</td></tr>`;
+    });
+    let extraMed = 0;
+    if(method === "เติมอาหารทางการแพทย์") {
+        let extraKcal = (vol*conc) - vol;
+        let kps = (brand === "Blendera") ? 37.33 : 36;
+        let wps = (brand === "Blendera") ? 8.33  : 8;
+        extraMed = Math.max(0, (extraKcal/kps)*wps);
+        html += `<tr style="color:#e67e22; font-weight:bold;"><td>${brand} (เติมเพิ่ม)</td><td>${extraMed.toFixed(1)} กรัม</td></tr>`;
+    }
+    document.getElementById('tbody').innerHTML = html;
+    let water = vol - totalBaseWeight - (extraMed*0.7);
+    document.getElementById('waterInfo').innerText = `💧 เติมน้ำจนครบ ${vol} ml (น้ำ ~ ${Math.max(0,water).toFixed(0)} ml)`;
+}
+function addRecord() {
+    const v = parseFloat(document.getElementById('vol').value) || 0;
+    const c = parseFloat(document.getElementById('conc').value);
+    if(v <= 0) return;
+    const now  = new Date();
+    const time = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
+    logs.push({ time, vol:v, kcal:v*c, id:Date.now() });
+    localStorage.setItem('bd_final_logs', JSON.stringify(logs));
+    renderLogs();
+    alert("บันทึกแล้ว ✅");
+}
+function renderLogs() {
+    const body = document.getElementById('logBody');
+    const section = document.getElementById('logSection');
+    let tv=0, tk=0;
+    body.innerHTML = "";
+    if(logs.length > 0) {
+        section.style.display = "block";
+        logs.forEach(item => {
+            tv += item.vol; tk += item.kcal;
+            body.innerHTML += `<tr><td>${item.time}</td><td>${item.vol}</td><td>${item.kcal}</td><td><button class="btn-del" onclick="deleteEntry(${item.id})">🗑️</button></td></tr>`;
         });
-
-        let extraMed = 0;
-        if(method === "เติมอาหารทางการแพทย์") {
-            let extraKcal = (vol * conc) - vol;
-            let kps = (brand === "Blendera") ? 37.33 : 36;
-            let wps = (brand === "Blendera") ? 8.33 : 8;
-            extraMed = Math.max(0, (extraKcal / kps) * wps);
-            html += `<tr style="color:#e67e22; font-weight:bold;"><td>${brand} (เติมเพิ่ม)</td><td>${extraMed.toFixed(1)} กรัม</td></tr>`;
-        }
-        document.getElementById('tbody').innerHTML = html;
-        let water = vol - totalBaseWeight - (extraMed * 0.7);
-        document.getElementById('waterInfo').innerText = `💧 เติมน้ำจนครบ ${vol} ml (น้ำ ~ ${Math.max(0, water).toFixed(0)} ml)`;
-    }
-
-    function addRecord() {
-        const v = parseFloat(document.getElementById('vol').value) || 0;
-        const c = parseFloat(document.getElementById('conc').value);
-        if(v <= 0) return;
-        const now = new Date();
-        const time = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
-        logs.push({ time: time, vol: v, kcal: v*c, id: Date.now() });
-        localStorage.setItem('bd_final_logs', JSON.stringify(logs));
-        renderLogs();
-        alert("บันทึกแล้ว ✅");
-    }
-
-    function renderLogs() {
-        const body = document.getElementById('logBody');
-        const section = document.getElementById('logSection');
-        let tv = 0, tk = 0;
-        body.innerHTML = "";
-        if(logs.length > 0) {
-            section.style.display = "block";
-            logs.forEach(item => {
-                tv += item.vol; tk += item.kcal;
-                body.innerHTML += `<tr><td>${item.time}</td><td>${item.vol}</td><td>${item.kcal}</td><td><button class="btn-del" onclick="deleteEntry(${item.id})">🗑️</button></td></tr>`;
-            });
-        } else { section.style.display = "none"; }
-        document.getElementById('tVol').innerText = tv.toLocaleString();
-        document.getElementById('tKcal').innerText = tk.toLocaleString();
-    }
-
-    function deleteEntry(id) {
-        logs = logs.filter(i => i.id !== id);
-        localStorage.setItem('bd_final_logs', JSON.stringify(logs));
+    } else { section.style.display = "none"; }
+    document.getElementById('tVol').innerText  = tv.toLocaleString();
+    document.getElementById('tKcal').innerText = tk.toLocaleString();
+}
+function deleteEntry(id) {
+    logs = logs.filter(i => i.id !== id);
+    localStorage.setItem('bd_final_logs', JSON.stringify(logs));
+    renderLogs();
+}
+function clearLogs() {
+    if(confirm("ล้างข้อมูลทั้งหมด?")) {
+        logs = [];
+        localStorage.removeItem('bd_final_logs');
         renderLogs();
     }
+}
 
-    function clearLogs() {
-        if(confirm("ล้างข้อมูลทั้งหมด?")) {
-            logs = [];
-            localStorage.removeItem('bd_final_logs');
-            renderLogs();
-        }
-    }
-</script>
-</body>
-</html>
+// ══════════════════════════════════════
+//  PAGE 2 — MED BRANDS (จาก Spreadsheet)
+// ══════════════════════════════════════
+const BOOSTERS = {
+    w
