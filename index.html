@@ -430,19 +430,32 @@ function medCalculate() {
     } else {
         const kcalPerG    = brand.kcalPerG > 10 ? brand.kcalPerG / 100 : brand.kcalPerG;
         const proteinPerG = brand.proteinPerG > 1 ? brand.proteinPerG / 100 : brand.proteinPerG;
-        const mlPerG      = (brand.waterPer100ml && brand.waterPer100ml > 0)
-                            ? brand.waterPer100ml / 100 : 4.5;
+        // mlPerG = ปริมาตรสุดท้าย (ml) ต่อผง 1g ที่ conc=1.0
+        // เก็บใน sheet col F เป็น ml/100g เช่น 450 = 4.5 ml/g
+        const mlPerG = (brand.waterPer100ml && brand.waterPer100ml > 0)
+                       ? brand.waterPer100ml / 100 : 4.5;
 
-        const totalPowderG = targetKcal / kcalPerG;
-        const totalMl      = (totalPowderG * mlPerG) / medConc;
-        const waterToAdd   = Math.max(0, totalMl - totalPowderG);
-        const totalProtein = totalPowderG * proteinPerG;
-        const scoops       = brand.gramPerScoop > 0 ? totalPowderG / brand.gramPerScoop : null;
+        // ── Input หลักคือ targetKcal + volume (ml) คงที่ ──
+        // ปริมาตรรวม = targetKcal / (kcalDensity ที่ conc=1.0)
+        // kcalDensity ที่ conc=1.0 = kcalPerG / mlPerG
+        const kcalDensityBase = kcalPerG / mlPerG;
+        // ปริมาตรรวม/วัน คงที่ตาม targetKcal ที่ conc=1.0
+        const totalMl = targetKcal / kcalDensityBase;
+
+        // ผงที่ต้องใช้ = totalMl × (g/ml ที่ conc นั้น)
+        // conc สูง → ผงต่อ ml มากขึ้น
+        // g/ml ที่ conc X = (kcalDensityBase × conc) / kcalPerG
+        const gPerMlAtConc  = (kcalDensityBase * medConc) / kcalPerG;
+        const totalPowderG  = totalMl * gPerMlAtConc;
+        const totalKcal     = totalPowderG * kcalPerG;
+        const waterToAdd    = Math.max(0, totalMl - totalPowderG);
+        const totalProtein  = totalPowderG * proteinPerG;
+        const scoops        = brand.gramPerScoop > 0 ? totalPowderG / brand.gramPerScoop : null;
 
         r = {
             brand: brand.name, type: 'POWDER',
             totalMl, mlPerMeal: totalMl / meals,
-            totalKcal: targetKcal, kcalPerMeal: targetKcal / meals,
+            totalKcal, kcalPerMeal: totalKcal / meals,
             totalProtein, proteinPerMeal: totalProtein / meals,
             freeWater: waterToAdd, flushWater: waterToAdd,
             powderG: totalPowderG, powderPerMeal: totalPowderG / meals,
