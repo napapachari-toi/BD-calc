@@ -452,22 +452,24 @@ function medCalculate() {
     } else {
         const kcalPerG    = brand.kcalPerG > 10 ? brand.kcalPerG / 100 : brand.kcalPerG;
         const proteinPerG = brand.proteinPerG > 1 ? brand.proteinPerG / 100 : brand.proteinPerG;
-        // volPerG  = ปริมาตรสุดท้าย (ml) ต่อผง 1g ที่ conc=1.0  (col F / 100)
-        // waterPerG = น้ำที่ต้องเติม (ml) ต่อผง 1g ที่ conc=1.0 (col G / 100)
-        const volPerG   = (brand.volPer100g   && brand.volPer100g   > 0) ? brand.volPer100g   / 100 : 4.5;
-        const waterPerG = (brand.waterPer100g && brand.waterPer100g > 0) ? brand.waterPer100g / 100 : 3.7;
+        // col F: volPer100g   = ปริมาตรสุดท้าย ml / ผง 100g ที่ conc=1.0
+        // col G: waterPer100g = น้ำที่เติม ml / ผง 100g ที่ conc=1.0
+        const volPerG   = (brand.volPer100g   > 0) ? brand.volPer100g   / 100 : 4.5;
+        const waterPerG = (brand.waterPer100g > 0) ? brand.waterPer100g / 100 : 3.7;
+        // displacement = ปริมาตรที่ผง 1g "ดัน" ออก (= vol - water ต่อ g)
+        const displacementPerG = volPerG - waterPerG;
 
-        // ── ปริมาตรรวมคงที่, conc สูง → ผงเพิ่ม, kcal เพิ่ม, น้ำลด ──
-        // kcalDensity ที่ conc=1.0 = kcalPerG / volPerG
+        // kcal density ที่ conc=1.0
         const kcalDensityBase = kcalPerG / volPerG;
-        const totalMl         = targetKcal / kcalDensityBase;  // คงที่ตาม targetKcal
+        // ปริมาตรรวมคงที่ทุก conc
+        const totalMl      = targetKcal / kcalDensityBase;
+        const powderBase   = totalMl / volPerG;  // ผงที่ conc=1.0
 
-        // ผงที่ต้องใช้ที่ conc X
-        const gPerMlAtConc = (kcalDensityBase * medConc) / kcalPerG;
-        const totalPowderG = totalMl * gPerMlAtConc;
+        // conc สูง → ผงเพิ่ม (× conc), vol คงที่
+        const totalPowderG = powderBase * medConc;
         const totalKcal    = totalPowderG * kcalPerG;
-        // น้ำที่ต้องเติม = waterPerG × ผง × (1/conc)  (conc สูง → น้ำน้อยลง)
-        const waterToAdd   = Math.max(0, (waterPerG * totalPowderG) / medConc);
+        // water = vol - (displacement × powder)
+        const waterToAdd   = Math.max(0, totalMl - (displacementPerG * totalPowderG));
         const totalProtein = totalPowderG * proteinPerG;
         const scoops       = brand.gramPerScoop > 0 ? totalPowderG / brand.gramPerScoop : null;
 
