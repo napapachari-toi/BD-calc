@@ -203,7 +203,8 @@ const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbx4ihjFPhEF3KuK_XUwO
 let db   = JSON.parse(localStorage.getItem('bd_final_db'))       || {};
 let logs = JSON.parse(localStorage.getItem('bd_final_logs'))      || [];
 // medBrandsDb: array of brand objects from Spreadsheet
-let medBrandsDb = JSON.parse(localStorage.getItem('bd_med_brands')) || [];
+let medBrandsDb  = JSON.parse(localStorage.getItem('bd_med_brands'))  || [];
+let boostersDb   = JSON.parse(localStorage.getItem('bd_boosters'))    || [];
 
 // ── Tab ──
 function switchTab(name, btn) {
@@ -241,7 +242,15 @@ async function syncData() {
         localStorage.setItem('bd_final_db', JSON.stringify(db));
         renderMenu();
 
-        // 2. ดึงข้อมูลยี่ห้ออาหารทางการแพทย์
+        // 2. ดึงข้อมูล boosters
+        const bRes  = await fetch(`${SCRIPT_URL}?action=getBoosters`, { method:'GET', redirect:'follow' });
+        const bData = await bRes.json();
+        if (!bData.error) {
+            boostersDb = bData;
+            localStorage.setItem('bd_boosters', JSON.stringify(boostersDb));
+        }
+
+        // 3. ดึงข้อมูลยี่ห้ออาหารทางการแพทย์
         const mRes = await fetch(`${SCRIPT_URL}?action=getMedBrands`, { method:'GET', redirect:'follow' });
         const mData = await mRes.json();
 
@@ -343,10 +352,21 @@ function clearLogs() {
 // ══════════════════════════════════════
 //  PAGE 2 — MED BRANDS (จาก Spreadsheet)
 // ══════════════════════════════════════
-const BOOSTERS = {
-    whey:     { name:"Whey Protein",              icon:"🥛", proteinPerG:0.88, note:"ผงเวย์โปรตีน" },
-    eggwhite: { name:"ไข่ขาว (ต้ม/พาสเจอไรซ์)", icon:"🥚", proteinPerG:0.11, note:"ไข่ขาว 1 ฟอง ≈ 33 g" }
-};
+// BOOSTERS โหลดจาก medBrandsDb (type === 'BOOSTER') — fallback ถ้าไม่มีใน sheet
+const BOOSTERS_DEFAULT = [
+    { name:"Whey Protein",              icon:"🥛", proteinPerG:0.80, note:"ผงเวย์โปรตีน" },
+    { name:"ไข่ขาว (ต้ม/พาสเจอไรซ์)", icon:"🥚", proteinPerG:0.11, note:"ไข่ขาว 1 ฟอง ≈ 33 g" }
+];
+
+function getBoosters() {
+    const fromSheet = medBrandsDb.filter(b => b.type === 'BOOSTER').map(b => ({
+        name: b.name,
+        icon: b.name.toLowerCase().includes('whey') ? '🥛' : '🥚',
+        proteinPerG: b.proteinPerG > 1 ? b.proteinPerG / 100 : b.proteinPerG,
+        note: b.gramPerScoop > 0 ? `1 ช้อน = ${b.gramPerScoop} g` : ''
+    }));
+    return fromSheet.length > 0 ? fromSheet : BOOSTERS_DEFAULT;
+}
 
 let medSelectedIdx = 0;  // index ของ brand ที่เลือกใน medBrandsDb
 let medConc = 1.2;
@@ -363,13 +383,15 @@ function renderMedBrands() {
         ? `${b.kcalPerMl} kcal/ml • RTF`
         : `${b.kcalPerG} kcal/g • ผง`;
 
-    grid.innerHTML = medBrandsDb.map((b, i) => `
-        <div class="brand-btn${i === 0 ? ' active' : ''}" data-idx="${i}" onclick="medSelectBrand(this)">
+    const brandList = medBrandsDb.filter(b => b.type !== 'BOOSTER');
+    grid.innerHTML = brandList.map((b, i) => {
+        const realIdx = medBrandsDb.indexOf(b);
+        return `<div class="brand-btn${i === 0 ? ' active' : ''}" data-idx="${realIdx}" onclick="medSelectBrand(this)">
             <span class="b-icon">${icon(b)}</span>${b.name}<div class="b-sub">${sub(b)}</div>
-        </div>
-    `).join('');
+        </div>`;
+    }).join('');
 
-    medSelectedIdx = 0;
+    medSelectedIdx = medBrandsDb.indexOf(brandList[0]);
     updateConcLock();
 }
 
@@ -430,27 +452,24 @@ function medCalculate() {
     } else {
         const kcalPerG    = brand.kcalPerG > 10 ? brand.kcalPerG / 100 : brand.kcalPerG;
         const proteinPerG = brand.proteinPerG > 1 ? brand.proteinPerG / 100 : brand.proteinPerG;
-        // mlPerG = ปริมาตรสุดท้าย (ml) ต่อผง 1g ที่ conc=1.0
-        // เก็บใน sheet col F เป็น ml/100g เช่น 450 = 4.5 ml/g
-        const mlPerG = (brand.waterPer100ml && brand.waterPer100ml > 0)
-                       ? brand.waterPer100ml / 100 : 4.5;
+        // volPerG  = ปริมาตรสุดท้าย (ml) ต่อผง 1g ที่ conc=1.0  (col F / 100)
+        // waterPerG = น้ำที่ต้องเติม (ml) ต่อผง 1g ที่ conc=1.0 (col G / 100)
+        const volPerG   = (brand.volPer100g   && brand.volPer100g   > 0) ? brand.volPer100g   / 100 : 4.5;
+        const waterPerG = (brand.waterPer100g && brand.waterPer100g > 0) ? brand.waterPer100g / 100 : 3.7;
 
-        // ── Input หลักคือ targetKcal + volume (ml) คงที่ ──
-        // ปริมาตรรวม = targetKcal / (kcalDensity ที่ conc=1.0)
-        // kcalDensity ที่ conc=1.0 = kcalPerG / mlPerG
-        const kcalDensityBase = kcalPerG / mlPerG;
-        // ปริมาตรรวม/วัน คงที่ตาม targetKcal ที่ conc=1.0
-        const totalMl = targetKcal / kcalDensityBase;
+        // ── ปริมาตรรวมคงที่, conc สูง → ผงเพิ่ม, kcal เพิ่ม, น้ำลด ──
+        // kcalDensity ที่ conc=1.0 = kcalPerG / volPerG
+        const kcalDensityBase = kcalPerG / volPerG;
+        const totalMl         = targetKcal / kcalDensityBase;  // คงที่ตาม targetKcal
 
-        // ผงที่ต้องใช้ = totalMl × (g/ml ที่ conc นั้น)
-        // conc สูง → ผงต่อ ml มากขึ้น
-        // g/ml ที่ conc X = (kcalDensityBase × conc) / kcalPerG
-        const gPerMlAtConc  = (kcalDensityBase * medConc) / kcalPerG;
-        const totalPowderG  = totalMl * gPerMlAtConc;
-        const totalKcal     = totalPowderG * kcalPerG;
-        const waterToAdd    = Math.max(0, totalMl - totalPowderG);
-        const totalProtein  = totalPowderG * proteinPerG;
-        const scoops        = brand.gramPerScoop > 0 ? totalPowderG / brand.gramPerScoop : null;
+        // ผงที่ต้องใช้ที่ conc X
+        const gPerMlAtConc = (kcalDensityBase * medConc) / kcalPerG;
+        const totalPowderG = totalMl * gPerMlAtConc;
+        const totalKcal    = totalPowderG * kcalPerG;
+        // น้ำที่ต้องเติม = waterPerG × ผง × (1/conc)  (conc สูง → น้ำน้อยลง)
+        const waterToAdd   = Math.max(0, (waterPerG * totalPowderG) / medConc);
+        const totalProtein = totalPowderG * proteinPerG;
+        const scoops       = brand.gramPerScoop > 0 ? totalPowderG / brand.gramPerScoop : null;
 
         r = {
             brand: brand.name, type: 'POWDER',
@@ -500,14 +519,14 @@ function medCalculate() {
         ps.innerHTML = `<div class="ok-box">✅ โปรตีนเพียงพอ! ได้รับ ${r.totalProtein.toFixed(1)} g / เป้าหมาย ${targetProtein} g/วัน</div>`;
     } else {
         let ph = `<div class="prot-card"><div class="prot-title">⚠️ โปรตีนขาด ${gap.toFixed(1)} g/วัน — ต้องเสริม</div>`;
-        for (const [, b] of Object.entries(BOOSTERS)) {
+        for (const b of getBoosters()) {
             const amt = gap / b.proteinPerG;
             ph += `<div class="prot-opt">
                 <div style="font-size:1.7rem">${b.icon}</div>
                 <div>
                     <div class="prot-name">${b.name}</div>
                     <div class="prot-amt">${amt.toFixed(1)} g/วัน</div>
-                    <div class="prot-sub">${b.note} • ${(amt/r.meals).toFixed(1)} g/มื้อ</div>
+                    <div class="prot-sub">${b.note ? b.note + ' • ' : ''}${(amt/r.meals).toFixed(1)} g/มื้อ</div>
                 </div>
             </div>`;
         }
