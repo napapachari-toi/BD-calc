@@ -149,18 +149,19 @@
 
     <div class="card">
         <div class="med-title">⚙️ ตั้งค่าการให้อาหาร</div>
-        <label>พลังงานเป้าหมาย (kcal/day)</label>
-        <input type="number" id="mKcal" value="1000">
         <div class="row2">
+            <div><label>ปริมาตรรวม (ml/day)</label><input type="number" id="mVol" value="1000"></div>
             <div><label>จำนวนมื้อต่อวัน</label><input type="number" id="mMeals" value="4" min="1" max="12"></div>
+        </div>
+        <div class="row2">
             <div><label>โปรตีนเป้าหมาย (g/day)</label><input type="number" id="mProtein" value="60"></div>
         </div>
-        <label>ความเข้มข้น <span id="concNote" style="color:#e67e22;font-size:0.75rem;"></span></label>
+        <label>ความเข้มข้น (kcal/ml) <span id="concNote" style="color:#e67e22;font-size:0.75rem;"></span></label>
         <div class="conc-grid" id="medConcGrid">
-            <div class="conc-btn active" data-conc="1.0" onclick="medSelectConc(this)">1.0×</div>
-            <div class="conc-btn" data-conc="1.2" onclick="medSelectConc(this)">1.2×</div>
-            <div class="conc-btn" data-conc="1.5" onclick="medSelectConc(this)">1.5×</div>
-            <div class="conc-btn" data-conc="2.0" onclick="medSelectConc(this)">2.0×</div>
+            <div class="conc-btn active" data-conc="1.0" onclick="medSelectConc(this)">1.0</div>
+            <div class="conc-btn" data-conc="1.2" onclick="medSelectConc(this)">1.2</div>
+            <div class="conc-btn" data-conc="1.5" onclick="medSelectConc(this)">1.5</div>
+            <div class="conc-btn" data-conc="2.0" onclick="medSelectConc(this)">2.0</div>
         </div>
     </div>
 
@@ -392,17 +393,19 @@ function medCalculate() {
     errBox.className = 'hidden';
 
     const brand         = medBrandsDb[medSelectedIdx];
-    const targetKcal    = parseFloat(document.getElementById('mKcal').value)    || 0;
+    const totalVol      = parseFloat(document.getElementById('mVol').value)     || 0;
     const meals         = parseInt(document.getElementById('mMeals').value)      || 1;
     const targetProtein = parseFloat(document.getElementById('mProtein').value) || 0;
-    if (targetKcal <= 0) { alert("กรุณากรอกพลังงานเป้าหมาย"); return; }
+    if (totalVol <= 0) { alert("กรุณากรอกปริมาตรรวม"); return; }
+    // kcal จริง = vol × conc (ทั้ง RTF และ POWDER)
+    const targetKcal = totalVol * medConc;
 
     const scale = targetKcal / 1000;  // scale factor จาก 1000 kcal
     let r = {};
 
     if (brand.type === 'RTF') {
-        const kcalPerMl    = brand.kcalPerMl || 1.0;
-        const totalMl      = targetKcal / kcalPerMl;
+        const scale        = targetKcal / 1000;
+        const totalMl      = totalVol;
         const totalProtein = (brand.proteinPer1000 || 0) * scale;
         const freeWater    = (brand.waterPer1000   || 0) * scale;
         r = {
@@ -414,41 +417,23 @@ function medCalculate() {
             powderG: null, powderPerMeal: null, scoops: null, scoopsPerMeal: null, meals
         };
     } else {
-        // ── POWDER: ข้อมูลต่อ 1000 kcal × scale ──
-        // volPer1000  = ปริมาตรรวม ml ที่ conc=1.0 ต่อ 1000 kcal
-        // conc สูง → vol ลด = volPer1000 × scale / conc
-        const volBase      = brand.volPer1000  * scale;      // vol ที่ conc=1.0
-        const totalMl      = volBase / medConc;               // vol ที่ conc จริง
-        // ผง: kcalPerG = 1000 / (volPer1000 / 1000kcal_per_1g_of_powder)
-        // ง่ายกว่า: ผงต่อ 1000kcal = volPer1000 / volPerG
-        // แต่เราไม่ต้องการ kcalPerG แล้ว เพราะ:
-        // ผงต่อ 1000kcal ที่ conc=1.0 = เราต้องหาจาก serving จริง
-        // จาก Blendera: 1000kcal = 222.2g ผง → คำนวณจาก volPer1000/volPerG
-        // แต่ง่ายสุด: ใส่ powderPer1000 ใน sheet เป็น col พิเศษ
-        // หรือ: powder = totalMl × conc / volPerG → ต้องการ volPerG
-        // volPerG = volPer1000 / (ผงต่อ 1000kcal) ... วนไป
-        // ──────────────────────────────────────────────────────────
-        // วิธีที่สะอาดที่สุด: เก็บ powderPer1000 (g ผงต่อ 1000kcal) ใน sheet ด้วย
-        // แต่ตอนนี้ไม่มี → ใช้ volPer1000 คำนวณ
-        // จาก Blendera: vol=1000ml, kcal=1000 → kcal/ml = 1.0 → powder = kcal/kcalPerG
-        // kcalPerG ≈ (kcal ต่อ serving) / (g ต่อ serving) เก็บใน sheet ไม่ได้แล้ว
-        // ── ใช้ powderPer1000 = volPer1000 / (volPer1000/gramPerScoop ... ไม่ได้อีก
-        // ──────────────────────────────────────────────────────────
-        // สรุป: ต้องเพิ่ม col "powderPer1000" ใน sheet
-        // แต่ถ้ายังไม่มี → fallback: powder = volPer1000 × scale × conc / volPerG_default(4.5)
-        // ──────────────────────────────────────────────────────────
-        // ใช้ field powderPer1000 ถ้ามี, ไม่งั้น estimate จาก volPer1000
+        // ── POWDER ──
+        // vol คงที่ = totalVol, kcal = vol × conc
+        // scale = kcal / 1000
+        const scale        = targetKcal / 1000;
+        const totalMl      = totalVol;  // vol คงที่เสมอ
+        // ผง = powderPer1000 × scale  (powderPer1000 มาจาก sheet col C แยก)
+        // ถ้า sheet เก็บ powderPer1000 ไว้ใช้เลย ไม่งั้น estimate จาก volPer1000
         const powderPer1000 = brand.powderPer1000 || (brand.volPer1000 / 4.5);
         const totalPowderG  = powderPer1000 * scale;
-        const waterPer1000  = brand.waterPer1000 * scale;
-        // น้ำที่ conc=X = waterPer1000×scale - (ผงเพิ่ม×displacement)
-        // displacement = volPer1000/1000 - waterPer1000/1000
-        const volPerG       = brand.volPer1000   / powderPer1000;
-        const waterPerG     = brand.waterPer1000 / powderPer1000;
-        const dispPerG      = volPerG - waterPerG;
-        const waterToAdd    = Math.max(0, totalMl - dispPerG * totalPowderG);
-        const totalProtein  = (brand.proteinPer1000 || 0) * scale;
-        const scoops        = brand.gramPerScoop > 0 ? totalPowderG / brand.gramPerScoop : null;
+        // displacement = (vol_serving - water_serving) / powder_serving
+        // เก็บใน sheet col G (displacementPer1000) หรือคำนวณจาก volPer1000 - waterPer1000
+        // displacement per g = (volPer1000 - waterPer1000) / powderPer1000
+        const dispPerG     = (brand.volPer1000 - brand.waterPer1000) / powderPer1000;
+        // น้ำ = vol - displacement × ผง
+        const waterToAdd   = Math.max(0, totalMl - dispPerG * totalPowderG);
+        const totalProtein = (brand.proteinPer1000 || 0) * scale;
+        const scoops       = brand.gramPerScoop > 0 ? totalPowderG / brand.gramPerScoop : null;
 
         r = {
             brand: brand.name, type: 'POWDER',
