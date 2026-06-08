@@ -83,6 +83,9 @@
         .hidden { display: none !important; }
         .loading-box { text-align: center; padding: 20px; color: #b2bec3; font-size: 0.88rem; grid-column: 1/-1; }
         .err-box { background: #fff5f5; border: 1.5px solid #ffcccc; border-radius: 12px; padding: 14px; color: #c0392b; font-size: 0.85rem; margin-bottom: 14px; }
+
+        /* ── Print Button (เพิ่มใหม่) ── */
+        .btn-print { width: 100%; padding: 15px; background: linear-gradient(135deg, #00b894, #00cec9); color: white; border: none; border-radius: 50px; font-size: 1rem; font-weight: 700; font-family: 'Prompt', sans-serif; cursor: pointer; box-shadow: 0 4px 14px rgba(0,184,148,0.3); margin-top: 10px; margin-bottom: 14px; }
     </style>
 </head>
 <body>
@@ -120,6 +123,8 @@
         <table class="calc-table"><tbody id="tbody"></tbody></table>
         <div id="waterInfo" class="water-box">กรุณากดปุ่มอัปเดตสูตร...</div>
         <button class="btn-main" onclick="addRecord()">✨ บันทึกมื้อนี้</button>
+        <!-- ปุ่มพิมพ์ใบสั่ง (เพิ่มใหม่) -->
+        <button class="btn-print" onclick="openPrint('recipe')">🖨️ พิมพ์ใบสั่ง</button>
     </div>
     <div class="total-box">
         <div><small>Vol รวมวันนี้</small><b id="tVol">0</b></div>
@@ -166,6 +171,8 @@
     </div>
 
     <button class="btn-calc" onclick="medCalculate()">🔢 คำนวณ</button>
+    <!-- ปุ่มพิมพ์ใบสั่ง page med (เพิ่มใหม่ — ซ่อนไว้ก่อน แสดงหลังคำนวณ) -->
+    <button class="btn-print hidden" id="btnPrintMed" onclick="openPrint('med')">🖨️ พิมพ์ใบสั่ง</button>
 
     <div id="medErr" class="hidden"></div>
     <div class="res-card hidden" id="medResult">
@@ -256,7 +263,7 @@ async function syncData() {
 }
 
 // ══════════════════════════════════════
-//  PAGE 1 — RECIPE (เดิม)
+//  PAGE 1 — RECIPE (เดิม ไม่เปลี่ยน)
 // ══════════════════════════════════════
 function renderMenu() {
     const s = document.getElementById('sheetSelect');
@@ -336,7 +343,7 @@ function clearLogs() {
 }
 
 // ══════════════════════════════════════
-//  PAGE 2 — MED CALCULATOR
+//  PAGE 2 — MED CALCULATOR (เดิม ไม่เปลี่ยน)
 // ══════════════════════════════════════
 let medSelectedIdx = 0;
 let medConc = 1.0;
@@ -397,10 +404,9 @@ function medCalculate() {
     const meals         = parseInt(document.getElementById('mMeals').value)      || 1;
     const targetProtein = parseFloat(document.getElementById('mProtein').value) || 0;
     if (totalVol <= 0) { alert("กรุณากรอกปริมาตรรวม"); return; }
-    // kcal จริง = vol × conc (ทั้ง RTF และ POWDER)
     const targetKcal = totalVol * medConc;
 
-    const scale = targetKcal / 1000;  // scale factor จาก 1000 kcal
+    const scale = targetKcal / 1000;
     let r = {};
 
     if (brand.type === 'RTF') {
@@ -417,20 +423,11 @@ function medCalculate() {
             powderG: null, powderPerMeal: null, scoops: null, scoopsPerMeal: null, meals
         };
     } else {
-        // ── POWDER ──
-        // vol คงที่ = totalVol, kcal = vol × conc
-        // scale = kcal / 1000
         const scale        = targetKcal / 1000;
-        const totalMl      = totalVol;  // vol คงที่เสมอ
-        // ผง = powderPer1000 × scale  (powderPer1000 มาจาก sheet col C แยก)
-        // ถ้า sheet เก็บ powderPer1000 ไว้ใช้เลย ไม่งั้น estimate จาก volPer1000
+        const totalMl      = totalVol;
         const powderPer1000 = brand.powderPer1000 || (brand.volPer1000 / 4.5);
         const totalPowderG  = powderPer1000 * scale;
-        // displacement = (vol_serving - water_serving) / powder_serving
-        // เก็บใน sheet col G (displacementPer1000) หรือคำนวณจาก volPer1000 - waterPer1000
-        // displacement per g = (volPer1000 - waterPer1000) / powderPer1000
         const dispPerG     = (brand.volPer1000 - brand.waterPer1000) / powderPer1000;
-        // น้ำ = vol - displacement × ผง
         const waterToAdd   = Math.max(0, totalMl - dispPerG * totalPowderG);
         const totalProtein = (brand.proteinPer1000 || 0) * scale;
         const scoops       = brand.gramPerScoop > 0 ? totalPowderG / brand.gramPerScoop : null;
@@ -478,7 +475,7 @@ function medCalculate() {
     `;
     document.getElementById('medDets').innerHTML = dets;
 
-    // ── Protein top-up จาก boostersDb ──
+    // ── Protein top-up ──
     const ps  = document.getElementById('medProtein');
     const gap = targetProtein - r.totalProtein;
     const boosters = boostersDb.length > 0 ? boostersDb : [
@@ -518,7 +515,315 @@ function medCalculate() {
         rows += `<tr><td>มื้อที่ ${i}</td><td>${r.mlPerMeal.toFixed(0)}</td><td>${powderCell}</td><td>${r.proteinPerMeal.toFixed(1)} g</td></tr>`;
     }
     document.getElementById('medMealBody').innerHTML = rows;
+
+    // ── แสดงปุ่มพิมพ์ใบสั่ง (เพิ่มใหม่) ──
+    document.getElementById('btnPrintMed').classList.remove('hidden');
+
     rc.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// ══════════════════════════════════════
+//  PRINT ORDER (เพิ่มใหม่ — ไม่กระทบโค้ดเดิม)
+// ══════════════════════════════════════
+function openPrint(mode) {
+    const now = new Date();
+    let data = { mode };
+
+    if (mode === 'recipe') {
+        const name   = document.getElementById('sheetSelect').value;
+        const vol    = parseFloat(document.getElementById('vol').value) || 0;
+        const conc   = parseFloat(document.getElementById('conc').value);
+        const method = document.getElementById('userMethod').value;
+        const brand  = document.getElementById('brand').value;
+        if (!db[name]) { alert("กรุณาเลือกสูตรก่อนครับ"); return; }
+        let rows = [];
+        let totalW = 0;
+        db[name].list.forEach(i => {
+            let amt = (method === "เพิ่มวัตถุดิบ") ? (i.base*(vol/1000)*conc) : (i.base*(vol/1000));
+            if (i.unit !== "ฟอง") totalW += amt;
+            rows.push({ name: i.name, amount: amt.toFixed(1), unit: i.unit });
+        });
+        let extraMed = 0;
+        if (method === "เติมอาหารทางการแพทย์") {
+            let extraKcal = (vol*conc) - vol;
+            let kps = (brand === "Blendera") ? 37.33 : 36;
+            let wps = (brand === "Blendera") ? 8.33  : 8;
+            extraMed = Math.max(0, (extraKcal/kps)*wps);
+            totalW += extraMed * 0.7;
+            rows.push({ name: brand + " (เติมเพิ่ม)", amount: extraMed.toFixed(1), unit: "กรัม" });
+        }
+        data = { ...data, recipe: name, method, vol, kcal: (vol*conc).toFixed(0),
+                 rows, water: Math.max(0, vol - totalW).toFixed(0) };
+
+    } else {
+        // med page
+        const brand = medBrandsDb[medSelectedIdx];
+        if (!brand || document.getElementById('medResult').classList.contains('hidden')) {
+            alert("กรุณากดคำนวณก่อนครับ"); return;
+        }
+        const totalVol  = parseFloat(document.getElementById('mVol').value) || 0;
+        const meals     = parseInt(document.getElementById('mMeals').value) || 1;
+        const targetPro = parseFloat(document.getElementById('mProtein').value) || 0;
+        const totalKcal = totalVol * medConc;
+        const scale     = totalKcal / 1000;
+        const totalPro  = (brand.proteinPer1000 || 0) * scale;
+        let details = [];
+        if (brand.type === 'POWDER') {
+            const powderPer1000 = brand.powderPer1000 || (brand.volPer1000/4.5);
+            const totalPowder   = powderPer1000 * scale;
+            const dispPerG      = (brand.volPer1000 - brand.waterPer1000) / powderPer1000;
+            const water         = Math.max(0, totalVol - dispPerG * totalPowder);
+            const scoopTxt      = brand.gramPerScoop > 0 ? ` (${(totalPowder/brand.gramPerScoop).toFixed(1)} ช้อน)` : '';
+            const scoopPerMeal  = brand.gramPerScoop > 0 ? ` (${(totalPowder/brand.gramPerScoop/meals).toFixed(1)} ช้อน)` : '';
+            details = [
+                { k:"🥄 ผงรวม/วัน",    v: totalPowder.toFixed(1)+" g"+scoopTxt },
+                { k:"🥄 ผง/มื้อ",       v: (totalPowder/meals).toFixed(1)+" g"+scoopPerMeal },
+                { k:"💧 น้ำที่เติม/วัน", v: water.toFixed(0)+" ml" },
+                { k:"💧 น้ำ/มื้อ",      v: (water/meals).toFixed(0)+" ml" },
+            ];
+        } else {
+            details = [
+                { k:"💧 Free water รวม",  v: ((brand.waterPer1000||0)*scale).toFixed(0)+" ml" },
+                { k:"💦 น้ำ flush (~10%)", v: (totalVol*0.1).toFixed(0)+" ml" },
+            ];
+        }
+        details.push(
+            { k:"⚡ Kcal/มื้อ",   v: (totalKcal/meals).toFixed(0)+" kcal" },
+            { k:"💪 โปรตีน/มื้อ", v: (totalPro/meals).toFixed(1)+" g" },
+            { k:"📊 โปรตีนรวม",   v: totalPro.toFixed(1)+" g / เป้า "+targetPro+" g" }
+        );
+        // meal rows
+        let mealRows = [];
+        for (let i = 1; i <= meals; i++) {
+            const powderCell = brand.type === 'POWDER'
+                ? `${((brand.powderPer1000||(brand.volPer1000/4.5))*scale/meals).toFixed(1)} g`
+                : `${(totalKcal/meals).toFixed(0)} kcal`;
+            mealRows.push({ no: i, ml: (totalVol/meals).toFixed(0), powder: powderCell, protein: (totalPro/meals).toFixed(1)+" g" });
+        }
+        data = { ...data, brand: brand.name, type: brand.type,
+                 totalVol, totalKcal: totalKcal.toFixed(0), meals,
+                 mlPerMeal: (totalVol/meals).toFixed(0),
+                 totalPro: totalPro.toFixed(1), targetPro, details, mealRows };
+    }
+
+    const w = window.open('', '_blank', 'width=860,height=950,scrollbars=yes');
+    w.document.write(buildPrintHTML(data));
+    w.document.close();
+}
+
+function buildPrintHTML(d) {
+    const now = new Date();
+    const todayISO = now.toISOString().split('T')[0];
+    const todayTH  = now.toLocaleDateString('th-TH', {year:'numeric', month:'long', day:'numeric'});
+
+    // ── ส่วนวัตถุดิบ (recipe) ──
+    let bodyHTML = '';
+    if (d.mode === 'recipe') {
+        const rows = d.rows.map(r =>
+            `<tr><td>${r.name}</td><td class="amt">${r.amount} ${r.unit}</td></tr>`
+        ).join('');
+        bodyHTML = `
+        <h3 class="sec-title">📋 ข้อมูลสูตร</h3>
+        <table class="info-tbl">
+            <tr><td>สูตรอาหาร</td><td><b>${d.recipe}</b></td></tr>
+            <tr><td>วิธีเพิ่มพลังงาน</td><td>${d.method}</td></tr>
+            <tr><td>ปริมาตรรวม</td><td><b>${d.vol} ml</b></td></tr>
+            <tr><td>พลังงานรวม</td><td><b>${d.kcal} kcal</b></td></tr>
+        </table>
+        <h3 class="sec-title">🧪 ส่วนผสม</h3>
+        <table class="ing-tbl">
+            <thead><tr><th>วัตถุดิบ</th><th>ปริมาณ</th></tr></thead>
+            <tbody>${rows}</tbody>
+            <tfoot>
+                <tr><td colspan="2" class="water-note">💧 เติมน้ำให้ครบ ${d.vol} ml &nbsp;(น้ำ ~ <b>${d.water} ml</b>)</td></tr>
+            </tfoot>
+        </table>`;
+    } else {
+        // med
+        const detRows = d.details.map(r =>
+            `<tr><td>${r.k}</td><td class="amt">${r.v}</td></tr>`
+        ).join('');
+        const mealRows = d.mealRows.map(r =>
+            `<tr><td>มื้อที่ ${r.no}</td><td>${r.ml} ml</td><td>${r.powder}</td><td>${r.protein}</td></tr>`
+        ).join('');
+        bodyHTML = `
+        <h3 class="sec-title">📋 ข้อมูลสูตร</h3>
+        <table class="info-tbl">
+            <tr><td>สูตร / ยี่ห้อ</td><td><b>${d.brand}</b> <span class="badge">${d.type}</span></td></tr>
+            <tr><td>ปริมาตรรวม/วัน</td><td><b>${d.totalVol} ml</b></td></tr>
+            <tr><td>พลังงานรวม/วัน</td><td><b>${d.totalKcal} kcal</b></td></tr>
+            <tr><td>จำนวนมื้อ</td><td><b>${d.meals} มื้อ (${d.mlPerMeal} ml/มื้อ)</b></td></tr>
+        </table>
+        <h3 class="sec-title">📊 รายละเอียด</h3>
+        <table class="ing-tbl">
+            <tbody>${detRows}</tbody>
+        </table>
+        <h3 class="sec-title">🍽️ แบ่งตามมื้อ</h3>
+        <table class="ing-tbl">
+            <thead><tr><th>มื้อที่</th><th>ml</th><th>ผง/ปริมาณ</th><th>โปรตีน</th></tr></thead>
+            <tbody>${mealRows}</tbody>
+        </table>`;
+    }
+
+    return `<!DOCTYPE html><html lang="th"><head>
+    <meta charset="UTF-8">
+    <title>ใบสั่งอาหาร</title>
+    <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600&family=Prompt:wght@600;700&display=swap" rel="stylesheet">
+    <style>
+        *{box-sizing:border-box;margin:0;padding:0;}
+        body{font-family:'Sarabun',sans-serif;background:#eef0f4;color:#2d3436;}
+
+        /* ── แถบควบคุม (ซ่อนตอนพิมพ์) ── */
+        .ctrl-bar{position:fixed;top:0;left:0;right:0;background:#2d3436;padding:10px 16px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;z-index:999;box-shadow:0 2px 8px rgba(0,0,0,0.3);}
+        .ctrl-bar label{color:#a29bfe;font-size:0.75rem;font-weight:600;margin-bottom:2px;display:block;}
+        .ctrl-bar input{padding:7px 10px;border-radius:8px;border:none;font-family:'Sarabun';font-size:0.88rem;width:160px;background:#fff;}
+        .ctrl-bar input[type=date]{width:140px;}
+        .ctrl-bar .grp{display:flex;flex-direction:column;}
+        .btn-do-print{padding:9px 20px;background:linear-gradient(135deg,#00b894,#00cec9);color:white;border:none;border-radius:10px;font-family:'Prompt';font-weight:700;font-size:0.9rem;cursor:pointer;white-space:nowrap;align-self:flex-end;}
+        .btn-close{padding:9px 16px;background:#636e72;color:white;border:none;border-radius:10px;font-family:'Prompt';font-weight:600;font-size:0.88rem;cursor:pointer;align-self:flex-end;}
+
+        /* ── กระดาษ A4 ── */
+        .spacer{height:80px;}
+        .page{width:210mm;margin:10px auto 30px;background:white;padding:16mm 18mm 16mm;box-shadow:0 4px 24px rgba(0,0,0,0.12);}
+        @page{size:A4 portrait;margin:0;}
+
+
+        /* Header */
+        .doc-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;}
+        .doc-left .hospital{font-size:0.75rem;color:#636e72;margin-bottom:2px;}
+        .doc-left .doc-title{font-family:'Prompt';font-size:1.5rem;font-weight:700;color:#6c5ce7;line-height:1.1;}
+        .doc-left .doc-sub{font-size:0.78rem;color:#b2bec3;margin-top:2px;}
+        .doc-right{text-align:right;font-size:0.78rem;color:#636e72;}
+        .doc-right .doc-no{font-family:'Prompt';font-size:0.85rem;font-weight:600;color:#2d3436;}
+        hr.divider{border:none;border-top:3px solid #6c5ce7;margin:10px 0 14px;}
+
+        /* กล่องผู้ป่วย */
+        .patient-box{display:grid;grid-template-columns:1fr 1fr;gap:10px 20px;background:#f8f9ff;border:1.5px solid #a29bfe;border-radius:10px;padding:12px 16px;margin-bottom:16px;}
+        .pf{font-size:0.72rem;color:#636e72;margin-bottom:3px;}
+        .pv{font-family:'Prompt';font-weight:600;font-size:0.95rem;color:#2d3436;border-bottom:1.5px solid #dfe6e9;padding-bottom:2px;min-height:22px;}
+        .type-badge{display:inline-block;background:#6c5ce7;color:white;font-size:0.68rem;padding:2px 8px;border-radius:20px;font-family:'Prompt';}
+
+        /* Sections */
+        .sec-title{font-family:'Prompt';font-size:0.82rem;color:#6c5ce7;margin:14px 0 6px;letter-spacing:0.03em;}
+        .info-tbl{width:100%;border-collapse:collapse;font-size:0.84rem;margin-bottom:8px;}
+        .info-tbl td{padding:5px 8px;border-bottom:1px solid #f0f2f5;}
+        .info-tbl td:first-child{color:#636e72;width:42%;}
+        .badge{display:inline-block;background:#00b894;color:white;font-size:0.65rem;padding:1px 7px;border-radius:20px;font-family:'Prompt';vertical-align:middle;}
+
+        .ing-tbl{width:100%;border-collapse:collapse;font-size:0.84rem;margin-bottom:8px;}
+        .ing-tbl thead th{background:#6c5ce7;color:white;padding:7px 10px;font-family:'Prompt';font-size:0.75rem;text-align:left;}
+        .ing-tbl thead th:first-child{border-radius:7px 0 0 7px;}
+        .ing-tbl thead th:last-child{border-radius:0 7px 7px 0;}
+        .ing-tbl tbody tr:nth-child(even) td{background:#fafbff;}
+        .ing-tbl tbody td{padding:7px 10px;border-bottom:1px solid #f0f2f5;}
+        .ing-tbl tfoot td{padding:8px 10px;}
+        .amt{text-align:right;font-family:'Prompt';font-weight:600;color:#2d3436;}
+        .water-note{color:#00b894;font-size:0.83rem;font-weight:600;}
+
+        /* ลายเซ็น */
+        .sig-section{margin-top:32px;display:grid;grid-template-columns:1fr 1fr;gap:40px;}
+        .sig-box{text-align:center;}
+        .sig-line{border-top:1.5px solid #b2bec3;margin:36px 10px 6px;}
+        .sig-label{font-size:0.75rem;color:#636e72;}
+        .sig-date{font-size:0.72rem;color:#b2bec3;margin-top:3px;}
+
+        /* Footer */
+        .doc-footer{margin-top:20px;border-top:1px solid #eee;padding-top:8px;font-size:0.7rem;color:#b2bec3;display:flex;justify-content:space-between;}
+
+        /* พิมพ์ */
+        @media print{
+            .ctrl-bar,.spacer{display:none!important;}
+            body{background:white;}
+            .page{margin:0;padding:12mm 14mm;box-shadow:none;width:100%;min-height:auto;}
+        }
+    </style>
+    </head><body>
+
+    <div class="ctrl-bar">
+        <div class="grp"><label>ชื่อ-สกุลผู้ป่วย</label><input id="inp_patient" placeholder="ชื่อ-สกุล" oninput="fillInfo()"></div>
+        <div class="grp"><label>HN</label><input id="inp_hn" placeholder="HN" style="width:110px" oninput="fillInfo()"></div>
+        <div class="grp"><label>Ward / ห้อง</label><input id="inp_ward" placeholder="Ward/ห้อง" style="width:110px" oninput="fillInfo()"></div>
+        <div class="grp"><label>วันที่สั่ง</label><input id="inp_date" type="date" value="${todayISO}" oninput="fillInfo()"></div>
+        <button class="btn-do-print" onclick="window.print()">🖨️ พิมพ์ / บันทึก PDF</button>
+        <button class="btn-close" onclick="window.close()">✕ ปิด</button>
+    </div>
+    <div class="spacer"></div>
+
+    <div class="page">
+        <div class="doc-header">
+            <div class="doc-left">
+                <div class="hospital">โรงพยาบาล / หน่วยโภชนาการ</div>
+                <div class="doc-title">ใบสั่งอาหาร</div>
+                <div class="doc-sub">Enteral Nutrition Order</div>
+            </div>
+            <div class="doc-right">
+                <div class="doc-no" id="disp_date">${todayTH}</div>
+                <div id="disp_ward" style="margin-top:4px;">—</div>
+            </div>
+        </div>
+        <hr class="divider">
+
+        <div class="patient-box">
+            <div>
+                <div class="pf">ชื่อ-สกุลผู้ป่วย / Patient Name</div>
+                <div class="pv" id="disp_patient">—</div>
+            </div>
+            <div>
+                <div class="pf">HN</div>
+                <div class="pv" id="disp_hn">—</div>
+            </div>
+            <div>
+                <div class="pf">ประเภทสูตร</div>
+                <div class="pv">
+                    <span class="type-badge">${d.mode === 'recipe' ? '🥤 Blenderized' : '🧮 Medical Food'}</span>
+                </div>
+            </div>
+            <div>
+                <div class="pf">วันที่สั่ง / Order Date</div>
+                <div class="pv" id="disp_date2">${todayTH}</div>
+            </div>
+        </div>
+
+        ${bodyHTML}
+
+        <div class="sig-section">
+            <div class="sig-box">
+                <div class="sig-line"></div>
+                <div class="sig-label">ผู้สั่ง / Ordered by</div>
+                <div class="sig-date">วันที่ ..........................</div>
+            </div>
+            <div class="sig-box">
+                <div class="sig-line"></div>
+                <div class="sig-label">ผู้รับ / Received by</div>
+                <div class="sig-date">วันที่ ..........................</div>
+            </div>
+        </div>
+
+        <div class="doc-footer">
+            <span>BD calc. — Enteral Nutrition System</span>
+            <span id="disp_footer">${todayTH}</span>
+        </div>
+    </div>
+
+    <script>
+        function fillInfo() {
+            const p = document.getElementById('inp_patient').value.trim();
+            const h = document.getElementById('inp_hn').value.trim();
+            const w = document.getElementById('inp_ward').value.trim();
+            const dt = document.getElementById('inp_date').value;
+            document.getElementById('disp_patient').textContent = p || '—';
+            document.getElementById('disp_hn').textContent      = h || '—';
+            document.getElementById('disp_ward').textContent    = w ? 'Ward: '+w : '—';
+            if (dt) {
+                const d = new Date(dt);
+                const str = d.toLocaleDateString('th-TH',{year:'numeric',month:'long',day:'numeric'});
+                document.getElementById('disp_date').textContent  = str;
+                document.getElementById('disp_date2').textContent = str;
+                document.getElementById('disp_footer').textContent = str;
+            }
+        }
+    <\/script>
+    </body></html>`;
 }
 
 // init
