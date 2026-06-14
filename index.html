@@ -118,6 +118,8 @@
         <select id="brand" onchange="calculate()">
             <option value="Gen-DM">Gen-DM</option><option value="Blendera">Blendera</option>
         </select>
+<label>โปรตีนเป้าหมาย (g/day)</label>
+<input type="number" id="rProtein" value="60" oninput="calculate()">
     </div>
     <div class="card">
         <table class="calc-table"><tbody id="tbody"></tbody></table>
@@ -279,29 +281,95 @@ function loadMethod() {
     calculate();
 }
 function calculate() {
-    const name   = document.getElementById('sheetSelect').value;
-    const vol    = parseFloat(document.getElementById('vol').value) || 0;
-    const conc   = parseFloat(document.getElementById('conc').value);
-    const brand  = document.getElementById('brand').value;
-    const method = document.getElementById('userMethod').value;
+    const name          = document.getElementById('sheetSelect').value;
+    const vol           = parseFloat(document.getElementById('vol').value) || 0;
+    const conc          = parseFloat(document.getElementById('conc').value);
+    const brand         = document.getElementById('brand').value;
+    const method        = document.getElementById('userMethod').value;
+    const targetProtein = parseFloat(document.getElementById('rProtein').value) || 0; // ← เพิ่มใหม่
     if (!db[name]) return;
+
     let html = "", totalBaseWeight = 0;
     db[name].list.forEach(i => {
-        let amt = (method === "เพิ่มวัตถุดิบ") ? (i.base*(vol/1000)*conc) : (i.base*(vol/1000));
+        let amt = (method === "เพิ่มวัตถุดิบ")
+            ? (i.base * (vol / 1000) * conc)
+            : (i.base * (vol / 1000));
         totalBaseWeight += amt;
         html += `<tr><td>${i.name}</td><td>${amt.toLocaleString(undefined,{minimumFractionDigits:1})} ${i.unit}</td></tr>`;
     });
+
     let extraMed = 0;
     if (method === "เติมอาหารทางการแพทย์") {
-        let extraKcal = (vol*conc) - vol;
+        let extraKcal = (vol * conc) - vol;
         let kps = (brand === "Blendera") ? 37.33 : 36;
         let wps = (brand === "Blendera") ? 8.33  : 8;
-        extraMed = Math.max(0, (extraKcal/kps)*wps);
+        extraMed = Math.max(0, (extraKcal / kps) * wps);
+        totalBaseWeight += extraMed * 0.7;
         html += `<tr style="color:#e67e22;font-weight:bold;"><td>${brand} (เติมเพิ่ม)</td><td>${extraMed.toFixed(1)} กรัม</td></tr>`;
     }
+
     document.getElementById('tbody').innerHTML = html;
-    let water = vol - totalBaseWeight - (extraMed*0.7);
-    document.getElementById('waterInfo').innerText = `💧 เติมน้ำจนครบ ${vol} ml (น้ำ ~ ${Math.max(0,water).toFixed(0)} ml)`;
+
+    let water = vol - totalBaseWeight - (extraMed * 0.7);
+    document.getElementById('waterInfo').innerText =
+        `💧 เติมน้ำจนครบ ${vol} ml (น้ำ ~ ${Math.max(0, water).toFixed(0)} ml)`;
+
+    // ── ส่วนใหม่ทั้งหมด: คำนวณโปรตีน ──────────────────────
+    const kcal     = vol * conc;
+    let gotProtein = (db[name].proteinPer1000 || 0) * (kcal / 1000); // โปรตีนจากสูตร
+
+    if (method === "เติมอาหารทางการแพทย์" && extraMed > 0) {
+        const medBrand = medBrandsDb.find(b => b.name === brand);
+        if (medBrand) {
+            const extraKcal = vol * conc - vol;
+            gotProtein += (medBrand.proteinPer1000 || 0) * (extraKcal / 1000); // บวกโปรตีนจาก Gen-DM/Blendera
+        }
+    }
+
+    renderRecipeProtein(gotProtein, targetProtein);
+    // ────────────────────────────────────────────────────────
+}
+
+function renderRecipeProtein(got, target) {
+    let el = document.getElementById('recipeProteinBox');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'recipeProteinBox';
+        const btnMain = document.querySelector('#page-recipe .btn-main');
+        btnMain.parentNode.insertBefore(el, btnMain);
+    }
+    if (target <= 0) { el.innerHTML = ''; return; }
+    const gap = target - got;
+    if (gap <= 0.5) {
+        el.innerHTML = `<div class="ok-box" style="margin-top:12px;">
+            ✅ โปรตีนเพียงพอ! ได้รับ <b>${got.toFixed(1)} g</b> / เป้าหมาย ${target} g/วัน
+        </div>`;
+    } else {
+        const boosters = boostersDb.length > 0 ? boostersDb : [
+            {name:"Whey Protein",  proteinPer100g:87.5, note:"ผงเวย์โปรตีน"},
+            {name:"ไข่ขาว(ฟอง)",  proteinPer100g:3,    note:"ไข่ขาว 33g = 1 ฟอง"},
+            {name:"ไข่ขาว(พาสฯ)", proteinPer100g:11,   note:"ไข่ขาว 1 ฟอง ≈ 33g"}
+        ];
+        let ph = `<div class="prot-card" style="margin-top:12px;">
+            <div class="prot-title">⚠️ โปรตีนขาด ${gap.toFixed(1)} g/วัน
+                <span style="font-weight:400;font-size:0.78rem;color:#636e72;margin-left:8px;">
+                    (ได้รับ ${got.toFixed(1)} g / เป้า ${target} g)
+                </span>
+            </div>`;
+        boosters.forEach(b => {
+            const amt = gap / (b.proteinPer100g / 100);
+            ph += `<div class="prot-opt">
+                <div style="font-size:1.7rem">${b.name.includes("ไข่") ? "🥚" : "🥛"}</div>
+                <div>
+                    <div class="prot-name">${b.name}</div>
+                    <div class="prot-amt">${amt.toFixed(1)} g/วัน</div>
+                    <div class="prot-sub">${b.note}</div>
+                </div>
+            </div>`;
+        });
+        ph += `</div>`;
+        el.innerHTML = ph;
+    }
 }
 function addRecord() {
     const v = parseFloat(document.getElementById('vol').value) || 0;
@@ -552,8 +620,19 @@ function openPrint(mode) {
             totalW += extraMed * 0.7;
             rows.push({ name: brand + " (เติมเพิ่ม)", amount: extraMed.toFixed(1), unit: "กรัม" });
         }
-        data = { ...data, recipe: name, method, vol, kcal: (vol*conc).toFixed(0),
-                 rows, water: Math.max(0, vol - totalW).toFixed(0) };
+        const kcalPrint  = vol * conc;
+let gotPro       = (db[name].proteinPer1000 || 0) * (kcalPrint / 1000);
+if (method === "เติมอาหารทางการแพทย์" && extraMed > 0) {
+    const mb = medBrandsDb.find(b => b.name === brand);
+    if (mb) gotPro += (mb.proteinPer1000 || 0) * ((vol * conc - vol) / 1000);
+}
+const targetPro2 = parseFloat(document.getElementById('rProtein').value) || 0;
+
+data = { ...data, recipe: name, method, vol, kcal: (vol*conc).toFixed(0),
+         rows, water: Math.max(0, vol - totalW).toFixed(0),
+         totalProtein: gotPro.toFixed(1),
+         targetPro: targetPro2
+       };
 
     } else {
         // med page
@@ -629,6 +708,7 @@ function buildPrintHTML(d) {
             <tr><td>วิธีเพิ่มพลังงาน</td><td>${d.method}</td></tr>
             <tr><td>ปริมาตรรวม</td><td><b>${d.vol} ml</b></td></tr>
             <tr><td>พลังงานรวม</td><td><b>${d.kcal} kcal</b></td></tr>
+<tr><td>โปรตีนรวม</td><td><b>${d.totalProtein} g</b> / เป้าหมาย ${d.targetPro} g/วัน</td></tr>
         </table>
         <h3 class="sec-title">🧪 ส่วนผสม</h3>
         <table class="ing-tbl">
