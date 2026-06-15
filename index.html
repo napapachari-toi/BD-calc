@@ -314,21 +314,26 @@ function calculate() {
     document.getElementById('waterInfo').innerText =
         `💧 เติมน้ำจนครบ ${vol} ml (น้ำ ~ ${Math.max(0, water).toFixed(0)} ml)`;
 
-    // ── ส่วนใหม่ทั้งหมด: คำนวณโปรตีน ──────────────────────
-    const kcal     = vol * conc;
-    let gotProtein = (db[name].proteinPer1000 || 0) * (kcal / 1000); // โปรตีนจากสูตร
+    // ── คำนวณโปรตีน (แก้ใหม่) ──────────────────────────────
+    const kcal = vol * conc;
+    let gotProtein;
 
-    if (method === "เติมอาหารทางการแพทย์" && extraMed > 0) {
-        const medBrand = medBrandsDb.find(b => b.name === brand);
-        if (medBrand) {
-            const extraKcal = vol * conc - vol;
-            gotProtein += (medBrand.proteinPer1000 || 0) * (extraKcal / 1000); // บวกโปรตีนจาก Gen-DM/Blendera
+    if (method === "เติมอาหารทางการแพทย์") {
+        gotProtein = (db[name].proteinPer1000 || 0) * (vol / 1000);
+        if (extraMed > 0) {
+            const medBrand = medBrandsDb.find(b => b.name === brand);
+            if (medBrand) {
+                const extraKcal = vol * conc - vol;
+                gotProtein += (medBrand.proteinPer1000 || 0) * (extraKcal / 1000);
+            }
         }
+    } else {
+        gotProtein = (db[name].proteinPer1000 || 0) * (kcal / 1000);
     }
 
     renderRecipeProtein(gotProtein, targetProtein);
     // ────────────────────────────────────────────────────────
-}
+}   // ← ปิด calculate()
 
 function renderRecipeProtein(got, target) {
     let el = document.getElementById('recipeProteinBox');
@@ -620,13 +625,17 @@ function openPrint(mode) {
             totalW += extraMed * 0.7;
             rows.push({ name: brand + " (เติมเพิ่ม)", amount: extraMed.toFixed(1), unit: "กรัม" });
         }
-        const kcalPrint  = vol * conc;
-let gotPro       = (db[name].proteinPer1000 || 0) * (kcalPrint / 1000);
-if (method === "เติมอาหารทางการแพทย์" && extraMed > 0) {
-    const mb = medBrandsDb.find(b => b.name === brand);
-    if (mb) gotPro += (mb.proteinPer1000 || 0) * ((vol * conc - vol) / 1000);
-}
-const targetPro2 = parseFloat(document.getElementById('rProtein').value) || 0;
+        let gotPro;
+        if (method === "เติมอาหารทางการแพทย์") {
+            gotPro = (db[name].proteinPer1000 || 0) * (vol / 1000);
+            if (extraMed > 0) {
+                const mb = medBrandsDb.find(b => b.name === brand);
+                if (mb) gotPro += (mb.proteinPer1000 || 0) * ((vol * conc - vol) / 1000);
+            }
+        } else {
+            gotPro = (db[name].proteinPer1000 || 0) * ((vol * conc) / 1000);
+        }
+        const targetPro2 = parseFloat(document.getElementById('rProtein').value) || 0;
 
 data = { ...data, recipe: name, method, vol, kcal: (vol*conc).toFixed(0),
          rows, water: Math.max(0, vol - totalW).toFixed(0),
