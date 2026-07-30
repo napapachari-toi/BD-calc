@@ -110,7 +110,7 @@
             <div style="flex:2;"><label>ปริมาตร (ml)</label><input type="number" id="vol" value="1000" oninput="calculate()"></div>
             <div style="flex:1;"><label>Conc.</label>
                 <select id="conc" onchange="calculate()">
-                    <option value="1.0">1.0</option><option value="1.2" selected>1.2</option><option value="1.5">1.5</option><option value="2.0">2.0</option>
+                    <option value="1.0" selected>1.0</option><option value="1.2">1.2</option><option value="1.5">1.5</option><option value="2.0">2.0</option>
                 </select>
             </div>
         </div>
@@ -428,7 +428,10 @@ function addRecord() {
     const c = parseFloat(document.getElementById('conc').value);
     if (v <= 0) return;
     // ── สิ้นสุดจับเวลาอัตโนมัติเมื่อกดบันทึกมื้อนี้ (เพิ่มใหม่ — ไม่กระทบโค้ดเดิม) ──
-    _endTiming('recipe', document.getElementById('sheetSelect').value);
+    const _recipeName = document.getElementById('sheetSelect').value;
+    _endTiming('recipe', _recipeName);
+    // เริ่มจับเวลารอบใหม่ทันที เผื่อพี่ปรับความเข้มข้น/ค่าอื่นแล้วกดบันทึกซ้ำในสูตรเดียวกัน
+    _startTiming('recipe', _recipeName);
     const now  = new Date();
     const time = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
     logs.push({time, vol:v, kcal:v*c, id:Date.now()});
@@ -643,6 +646,8 @@ function medCalculate() {
 
     // ── สิ้นสุดจับเวลาอัตโนมัติ: กดคำนวณเสร็จ ได้ตัวเลขออกมาแล้ว (เพิ่มใหม่ — ไม่กระทบโค้ดเดิม) ──
     _endTiming('med', brand.name);
+    // เริ่มจับเวลารอบใหม่ทันที เผื่อพี่ปรับปริมาตร/มื้อ/ความเข้มข้นแล้วกดคำนวณซ้ำ
+    _startTiming('med', brand.name);
 
     rc.scrollIntoView({behavior:'smooth', block:'start'});
 }
