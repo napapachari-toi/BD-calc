@@ -219,6 +219,8 @@ function switchTab(name, btn) {
     document.getElementById('page-' + name).classList.add('active');
     btn.classList.add('active');
     document.getElementById('pageTitle').textContent = name === 'recipe' ? '🥤 BD calc. ✨' : '🧮 อาหารทางการแพทย์';
+    // ── เริ่มจับเวลาอัตโนมัติเมื่อเข้าหน้าอาหารทางการแพทย์ (เพิ่มใหม่ — ไม่กระทบโค้ดเดิม) ──
+    if (name === 'med') _startTiming('med', 'เข้าหน้าอาหารทางการแพทย์');
 }
 
 window.onload = () => { renderMenu(); renderLogs(); renderMedBrands(); };
@@ -265,6 +267,49 @@ async function syncData() {
 }
 
 // ══════════════════════════════════════
+//  AUTO TIME TRACKING (เพิ่มใหม่ทั้งบล็อก — ไม่กระทบโค้ดเดิมส่วนอื่น)
+//  จับเวลาแบบ timestamp อัตโนมัติ แทนการกะเวลาในใจ ใช้สำหรับงานวิจัย/CQI
+//
+//  ขอบเขตการจับเวลา (ตาม protocol ที่ตกลงกันไว้):
+//    เริ่ม = หลังรวบรวม+แยกสูตรเสร็จ (ซึ่งในแอปนี้คือจุดที่เริ่มทำงานกับสูตร/ยี่ห้อนั้น)
+//    จบ   = กดคำนวณเสร็จ ได้ตัวเลขออกมา (ไม่รวมขั้นตอนตรวจทาน)
+//
+//  หน้าสูตรอาหาร (recipe): เริ่มเมื่อ "เลือกสูตร", จบเมื่อ "กดบันทึกมื้อนี้"
+//    (หมายเหตุ: หน้านี้คำนวณสด real-time ทุกครั้งที่พิมพ์ ไม่มีปุ่ม "คำนวณ" แยก
+//     จึงใช้ปุ่มบันทึกมื้อนี้เป็นจุดจบแทน — ควรระบุข้อจำกัดนี้ไว้ในเอกสารวิธีวิจัยด้วย)
+//  หน้าอาหารทางการแพทย์ (med): เริ่มเมื่อ "เข้าหน้านี้", จบเมื่อ "กดคำนวณ" เสร็จ
+// ══════════════════════════════════════
+let _timerStart = { recipe: null, med: null };
+
+function _startTiming(page, label) {
+    _timerStart[page] = performance.now();
+    console.log(`⏱️ เริ่มจับเวลา [${page}]: ${label}`);
+}
+
+function _endTiming(page, label) {
+    if (!_timerStart[page]) return; // ยังไม่เคยเริ่มจับ (กันเหนียว ไม่ error)
+    const elapsedMin = (performance.now() - _timerStart[page]) / 60000;
+    _timerStart[page] = null; // reset ป้องกันนับซ้ำถ้ากดซ้ำ
+    _sendTimingLog(page, label, elapsedMin);
+}
+
+function _sendTimingLog(page, label, elapsedMin) {
+    const payload = {
+        action: 'logTiming',
+        page: page,                          // 'recipe' หรือ 'med'
+        label: label,                        // ชื่อสูตร/ยี่ห้อ
+        elapsedMinutes: elapsedMin.toFixed(2),
+        timestamp: new Date().toISOString()
+    };
+    // ยิงแบบ fire-and-forget: ไม่ตั้ง header Content-Type เอง (สำคัญ — ป้องกัน CORS
+    // preflight ที่ Google Apps Script เว็บแอปไม่รองรับ) และไม่ await/alert เพื่อไม่ให้
+    // การบันทึกเวลาไปหน่วง หรือรบกวนการทำงานหน้าจอหลักแม้อินเทอร์เน็ตจะมีปัญหา
+    fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) })
+        .catch(() => { /* เงียบไว้โดยตั้งใจ ไม่ alert ผู้ใช้ */ });
+    console.log(`⏱️ บันทึกเวลา [${page}] ${label}: ${elapsedMin.toFixed(2)} นาที`);
+}
+
+// ══════════════════════════════════════
 //  PAGE 1 — RECIPE (เดิม ไม่เปลี่ยน)
 // ══════════════════════════════════════
 function renderMenu() {
@@ -277,6 +322,8 @@ function loadMethod() {
     if (db[name]) {
         const m = db[name].method.toString();
         document.getElementById('userMethod').value = m.includes("เติม") ? "เติมอาหารทางการแพทย์" : "เพิ่มวัตถุดิบ";
+        // ── เริ่มจับเวลาอัตโนมัติเมื่อเลือกสูตร (เพิ่มใหม่ — ไม่กระทบโค้ดเดิม) ──
+        _startTiming('recipe', name);
     }
     calculate();
 }
@@ -380,6 +427,8 @@ function addRecord() {
     const v = parseFloat(document.getElementById('vol').value) || 0;
     const c = parseFloat(document.getElementById('conc').value);
     if (v <= 0) return;
+    // ── สิ้นสุดจับเวลาอัตโนมัติเมื่อกดบันทึกมื้อนี้ (เพิ่มใหม่ — ไม่กระทบโค้ดเดิม) ──
+    _endTiming('recipe', document.getElementById('sheetSelect').value);
     const now  = new Date();
     const time = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
     logs.push({time, vol:v, kcal:v*c, id:Date.now()});
@@ -591,6 +640,9 @@ function medCalculate() {
 
     // ── แสดงปุ่มพิมพ์ใบสั่ง (เพิ่มใหม่) ──
     document.getElementById('btnPrintMed').classList.remove('hidden');
+
+    // ── สิ้นสุดจับเวลาอัตโนมัติ: กดคำนวณเสร็จ ได้ตัวเลขออกมาแล้ว (เพิ่มใหม่ — ไม่กระทบโค้ดเดิม) ──
+    _endTiming('med', brand.name);
 
     rc.scrollIntoView({behavior:'smooth', block:'start'});
 }
