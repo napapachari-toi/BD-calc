@@ -173,6 +173,8 @@
     </div>
 
     <button class="btn-calc" onclick="medCalculate()">🔢 คำนวณ</button>
+    <!-- ปุ่มบันทึก (เพิ่มใหม่) — กดเมื่อจะใช้ผลคำนวณนี้จริง (แยกจากการคำนวณดูเฉย ๆ เช่นเคส OPD) -->
+    <button class="btn-main hidden" id="btnSaveMed" onclick="saveMedRecord()">💾 บันทึก</button>
     <!-- ปุ่มพิมพ์ใบสั่ง page med (เพิ่มใหม่ — ซ่อนไว้ก่อน แสดงหลังคำนวณ) -->
     <button class="btn-print hidden" id="btnPrintMed" onclick="openPrint('med')">🖨️ พิมพ์ใบสั่ง</button>
 
@@ -211,6 +213,7 @@ let db          = JSON.parse(localStorage.getItem('bd_final_db'))    || {};
 let logs        = JSON.parse(localStorage.getItem('bd_final_logs'))   || [];
 let medBrandsDb = JSON.parse(localStorage.getItem('bd_med_brands'))   || [];
 let boostersDb  = JSON.parse(localStorage.getItem('bd_boosters'))     || [];
+let _lastRecipeProteinInfo = { got: 0, target: 0 }; // เพิ่มใหม่ — ใช้ตอนบันทึกผงเสริมโปรตีนที่เลือกจริง
 
 // ── Tab ──
 function switchTab(name, btn) {
@@ -309,6 +312,40 @@ function _sendTimingLog(page, label, elapsedMin) {
     console.log(`⏱️ บันทึกเวลา [${page}] ${label}: ${elapsedMin.toFixed(2)} นาที`);
 }
 
+// ── บันทึกปริมาณการใช้ผง/วัตถุดิบ (เพิ่มใหม่ — ไม่กระทบโค้ดเดิม) ──
+// เรียกเฉพาะตอนกด "บันทึก" จริง (ไม่ใช่ทุกครั้งที่คำนวณ) เพื่อสะท้อนปริมาณผงที่ใช้จริง
+function _sendPowderUsage(page, context, items) {
+    if (!items || !items.length) return;
+    const payload = {
+        action: 'logPowderUsage',
+        page: page,          // 'recipe' หรือ 'med'
+        context: context,    // ชื่อสูตร หรือ ชื่อยี่ห้อ
+        items: items,        // [{ name, amount, unit }, ...]
+        timestamp: new Date().toISOString()
+    };
+    fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) })
+        .catch(() => { /* เงียบไว้โดยตั้งใจ ไม่ alert ผู้ใช้ */ });
+    console.log(`🥄 บันทึกการใช้ผง [${page}] ${context}:`, items);
+}
+
+// ── บันทึกผงเสริมโปรตีนที่ "เลือกใช้จริง" เท่านั้น (เพิ่มใหม่) ──
+// อ่านจาก radio button ที่ผู้ใช้กดยืนยัน ป้องกันการนับผงเวย์/ไข่ขาวเกินจริง
+// (เพราะหน้าจอโชว์ให้เลือกได้หลายตัวเลือก แต่ใช้จริงแค่ 1 อย่างต่อครั้ง)
+function _logChosenBooster(page, context, radioName, gap) {
+    if (!gap || gap <= 0.5) return; // ไม่ขาดโปรตีน ไม่ต้องเสริม ไม่ต้องบันทึก
+    const checked = document.querySelector(`input[name="${radioName}"]:checked`);
+    if (!checked || !checked.value) return; // เลือก "ไม่ได้เสริม" หรือยังไม่ได้เลือก
+    const boosters = boostersDb.length > 0 ? boostersDb : [
+        {name:"Whey Protein",  proteinPer100g:87.5, note:"ผงเวย์โปรตีน"},
+        {name:"ไข่ขาว(ฟอง)",  proteinPer100g:3,    note:"ไข่ขาว 33g = 1 ฟอง"},
+        {name:"ไข่ขาว(พาสฯ)", proteinPer100g:11,   note:"ไข่ขาว 1 ฟอง ≈ 33g"}
+    ];
+    const chosen = boosters.find(b => b.name === checked.value);
+    if (!chosen) return;
+    const amt = gap / (chosen.proteinPer100g / 100);
+    _sendPowderUsage(page, context, [{ name: chosen.name, amount: +amt.toFixed(1), unit: 'กรัม' }]);
+}
+
 // ══════════════════════════════════════
 //  PAGE 1 — RECIPE (เดิม ไม่เปลี่ยน)
 // ══════════════════════════════════════
@@ -390,6 +427,7 @@ function renderRecipeProtein(got, target) {
         const btnMain = document.querySelector('#page-recipe .btn-main');
         btnMain.parentNode.insertBefore(el, btnMain);
     }
+    _lastRecipeProteinInfo = { got, target }; // เพิ่มใหม่ — เก็บไว้ใช้ตอนกดบันทึก
     if (target <= 0) { el.innerHTML = ''; return; }
     const gap = target - got;
     if (gap <= 0.5) {
@@ -407,16 +445,24 @@ function renderRecipeProtein(got, target) {
                 <span style="font-weight:400;font-size:0.78rem;color:#636e72;margin-left:8px;">
                     (ได้รับ ${got.toFixed(1)} g / เป้า ${target} g)
                 </span>
+            </div>
+            <!-- ── เลือกว่าใช้ตัวไหนจริง (เพิ่มใหม่) — สำหรับบันทึกปริมาณผงให้ตรงกับที่ใช้จริง ── -->
+            <div class="prot-opt" style="background:#f8f9fa;">
+                <input type="radio" name="recipeBoosterChoice" value="" id="rb_none" checked style="margin-right:10px;width:auto;">
+                <label for="rb_none" style="cursor:pointer;font-size:0.85rem;color:#636e72;">ยังไม่เลือก / ไม่ได้เสริม</label>
             </div>`;
-        boosters.forEach(b => {
+        boosters.forEach((b, idx) => {
             const amt = gap / (b.proteinPer100g / 100);
             ph += `<div class="prot-opt">
-                <div style="font-size:1.7rem">${b.name.includes("ไข่") ? "🥚" : "🥛"}</div>
-                <div>
-                    <div class="prot-name">${b.name}</div>
-                    <div class="prot-amt">${amt.toFixed(1)} g/วัน</div>
-                    <div class="prot-sub">${b.note}</div>
-                </div>
+                <input type="radio" name="recipeBoosterChoice" value="${b.name}" id="rb_${idx}" style="margin-right:10px;width:auto;">
+                <label for="rb_${idx}" style="cursor:pointer;display:flex;align-items:center;gap:12px;flex:1;">
+                    <div style="font-size:1.7rem">${b.name.includes("ไข่") ? "🥚" : "🥛"}</div>
+                    <div>
+                        <div class="prot-name">${b.name}</div>
+                        <div class="prot-amt">${amt.toFixed(1)} g/วัน</div>
+                        <div class="prot-sub">${b.note}</div>
+                    </div>
+                </label>
             </div>`;
         });
         ph += `</div>`;
@@ -432,12 +478,38 @@ function addRecord() {
     _endTiming('recipe', _recipeName);
     // เริ่มจับเวลารอบใหม่ทันที เผื่อพี่ปรับความเข้มข้น/ค่าอื่นแล้วกดบันทึกซ้ำในสูตรเดียวกัน
     _startTiming('recipe', _recipeName);
+    // ── บันทึกปริมาณการใช้ผง/วัตถุดิบของมื้อนี้ (เพิ่มใหม่) ──
+    _logPowderUsageForRecipe(_recipeName, v, c);
+    // ── บันทึกผงเสริมโปรตีนที่เลือกใช้จริง (เพิ่มใหม่) ──
+    _logChosenBooster('recipe', _recipeName, 'recipeBoosterChoice', _lastRecipeProteinInfo.target - _lastRecipeProteinInfo.got);
     const now  = new Date();
     const time = now.getHours().toString().padStart(2,'0')+":"+now.getMinutes().toString().padStart(2,'0');
     logs.push({time, vol:v, kcal:v*c, id:Date.now()});
     localStorage.setItem('bd_final_logs', JSON.stringify(logs));
     renderLogs();
     alert("บันทึกแล้ว ✅");
+}
+// ── คำนวณปริมาณผง/วัตถุดิบของสูตรนี้ (เพิ่มใหม่) เพื่อส่งไปบันทึกที่ Powder_Usage ──
+// ใช้สูตรเดียวกับ calculate()/openPrint() เพื่อให้ตัวเลขตรงกับที่แสดงในหน้าจอ
+function _logPowderUsageForRecipe(name, vol, conc) {
+    if (!db[name]) return;
+    const method = document.getElementById('userMethod').value;
+    const brand  = document.getElementById('brand').value;
+    let items = [];
+    db[name].list.forEach(i => {
+        let amt = (method === "เพิ่มวัตถุดิบ")
+            ? (i.base * (vol / 1000) * conc)
+            : (i.base * (vol / 1000));
+        items.push({ name: i.name, amount: +amt.toFixed(1), unit: i.unit });
+    });
+    if (method === "เติมอาหารทางการแพทย์") {
+        let extraKcal = (vol * conc) - vol;
+        let kps = (brand === "Blendera") ? 37.33 : 36;
+        let wps = (brand === "Blendera") ? 8.33  : 8;
+        let extraMed = Math.max(0, (extraKcal / kps) * wps);
+        items.push({ name: brand + " (เติมเพิ่ม)", amount: +extraMed.toFixed(1), unit: "กรัม" });
+    }
+    _sendPowderUsage('recipe', name, items);
 }
 function renderLogs() {
     const body    = document.getElementById('logBody');
@@ -472,6 +544,7 @@ function clearLogs() {
 // ══════════════════════════════════════
 let medSelectedIdx = 0;
 let medConc = 1.0;
+let _lastMedResult = null; // เก็บผลคำนวณล่าสุดของหน้า med (เพิ่มใหม่ — ใช้สำหรับบันทึกปริมาณผง)
 
 function renderMedBrands() {
     const grid = document.getElementById('brandGrid');
@@ -568,6 +641,9 @@ function medCalculate() {
         };
     }
 
+    // ── เก็บผลคำนวณล่าสุดไว้ใช้ตอนกดบันทึก (เพิ่มใหม่ — ไม่กระทบโค้ดเดิม) ──
+    _lastMedResult = r;
+
     // ── Render result ──
     const rc = document.getElementById('medResult');
     rc.classList.remove('hidden');
@@ -603,6 +679,7 @@ function medCalculate() {
     // ── Protein top-up ──
     const ps  = document.getElementById('medProtein');
     const gap = targetProtein - r.totalProtein;
+    _lastMedResult.proteinGap = gap; // เพิ่มใหม่ — เก็บไว้ใช้ตอนกดบันทึก
     const boosters = boostersDb.length > 0 ? boostersDb : [
         {name:"Whey Protein", proteinPer100g:87.5, note:"ผงเวย์โปรตีน"},
         {name:"ไข่ขาว(ฟอง)",  proteinPer100g:3,    note:"ไข่ขาว 33g = 1 ฟอง"},
@@ -612,17 +689,25 @@ function medCalculate() {
     if (gap <= 0.5) {
         ps.innerHTML = `<div class="ok-box">✅ โปรตีนเพียงพอ! ได้รับ ${r.totalProtein.toFixed(1)} g / เป้าหมาย ${targetProtein} g/วัน</div>`;
     } else {
-        let ph = `<div class="prot-card"><div class="prot-title">⚠️ โปรตีนขาด ${gap.toFixed(1)} g/วัน — ต้องเสริม</div>`;
-        boosters.forEach(b => {
+        let ph = `<div class="prot-card"><div class="prot-title">⚠️ โปรตีนขาด ${gap.toFixed(1)} g/วัน — ต้องเสริม</div>
+            <!-- ── เลือกว่าใช้ตัวไหนจริง (เพิ่มใหม่) — สำหรับบันทึกปริมาณผงให้ตรงกับที่ใช้จริง ── -->
+            <div class="prot-opt" style="background:#f8f9fa;">
+                <input type="radio" name="medBoosterChoice" value="" id="mb_none" checked style="margin-right:10px;width:auto;">
+                <label for="mb_none" style="cursor:pointer;font-size:0.85rem;color:#636e72;">ยังไม่เลือก / ไม่ได้เสริม</label>
+            </div>`;
+        boosters.forEach((b, idx) => {
             const proteinPerG = b.proteinPer100g / 100;
             const amt = gap / proteinPerG;
             ph += `<div class="prot-opt">
-                <div style="font-size:1.7rem">${b.name.includes("ไข่") ? "🥚" : "🥛"}</div>
-                <div>
-                    <div class="prot-name">${b.name}</div>
-                    <div class="prot-amt">${amt.toFixed(1)} g/วัน</div>
-                    <div class="prot-sub">${b.note} • ${(amt/r.meals).toFixed(1)} g/มื้อ</div>
-                </div>
+                <input type="radio" name="medBoosterChoice" value="${b.name}" id="mb_${idx}" style="margin-right:10px;width:auto;">
+                <label for="mb_${idx}" style="cursor:pointer;display:flex;align-items:center;gap:12px;flex:1;">
+                    <div style="font-size:1.7rem">${b.name.includes("ไข่") ? "🥚" : "🥛"}</div>
+                    <div>
+                        <div class="prot-name">${b.name}</div>
+                        <div class="prot-amt">${amt.toFixed(1)} g/วัน</div>
+                        <div class="prot-sub">${b.note} • ${(amt/r.meals).toFixed(1)} g/มื้อ</div>
+                    </div>
+                </label>
             </div>`;
         });
         ph += `</div>`;
@@ -641,15 +726,36 @@ function medCalculate() {
     }
     document.getElementById('medMealBody').innerHTML = rows;
 
-    // ── แสดงปุ่มพิมพ์ใบสั่ง (เพิ่มใหม่) ──
+    // ── แสดงปุ่มบันทึก/พิมพ์ใบสั่ง (เพิ่มใหม่) ──
+    document.getElementById('btnSaveMed').classList.remove('hidden');
     document.getElementById('btnPrintMed').classList.remove('hidden');
 
-    // ── สิ้นสุดจับเวลาอัตโนมัติ: กดคำนวณเสร็จ ได้ตัวเลขออกมาแล้ว (เพิ่มใหม่ — ไม่กระทบโค้ดเดิม) ──
-    _endTiming('med', brand.name);
-    // เริ่มจับเวลารอบใหม่ทันที เผื่อพี่ปรับปริมาตร/มื้อ/ความเข้มข้นแล้วกดคำนวณซ้ำ
-    _startTiming('med', brand.name);
-
     rc.scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+// ══════════════════════════════════════
+//  SAVE MED RECORD (เพิ่มใหม่ — ไม่กระทบโค้ดเดิม)
+//  กดเมื่อจะใช้ผลคำนวณนี้จริง (แยกจากการกดคำนวณดูเฉย ๆ เช่นเคส OPD)
+//  เฉพาะตอนกดปุ่มนี้เท่านั้นที่จะบันทึกเวลาไป Time_Log
+// ══════════════════════════════════════
+function saveMedRecord() {
+    if (!medBrandsDb[medSelectedIdx] || document.getElementById('medResult').classList.contains('hidden')) {
+        alert("กรุณากดคำนวณก่อนครับ"); return;
+    }
+    const brand = medBrandsDb[medSelectedIdx];
+    _endTiming('med', brand.name);
+    _startTiming('med', brand.name); // เริ่มจับเวลารอบใหม่ทันที เผื่อคำนวณ/บันทึกต่อเนื่องในรอบถัดไป
+
+    // ── บันทึกปริมาณการใช้ผง (เพิ่มใหม่) — เฉพาะยี่ห้อประเภทผง (ไม่ใช่ RTF) ──
+    if (_lastMedResult && _lastMedResult.type === 'POWDER' && _lastMedResult.powderG) {
+        _sendPowderUsage('med', brand.name, [
+            { name: brand.name, amount: +_lastMedResult.powderG.toFixed(1), unit: 'กรัม' }
+        ]);
+    }
+    // ── บันทึกผงเสริมโปรตีนที่เลือกใช้จริง (เพิ่มใหม่) ──
+    _logChosenBooster('med', brand.name, 'medBoosterChoice', _lastMedResult ? _lastMedResult.proteinGap : 0);
+
+    alert("บันทึกแล้ว ✅");
 }
 
 // ══════════════════════════════════════
