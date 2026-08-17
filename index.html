@@ -119,7 +119,7 @@
             <option value="Gen-DM">Gen-DM</option><option value="Blendera">Blendera</option>
         </select>
 <label>โปรตีนเป้าหมาย (g/day)</label>
-<input type="number" id="rProtein" value="60" oninput="calculate()">
+<input type="number" id="rProtein" placeholder="ระบุโปรตีนเป้าหมาย" oninput="calculate()">
     </div>
     <div class="card">
         <table class="calc-table"><tbody id="tbody"></tbody></table>
@@ -161,7 +161,7 @@
             <div><label>จำนวนมื้อต่อวัน</label><input type="number" id="mMeals" value="4" min="1" max="12"></div>
         </div>
         <div class="row2">
-            <div><label>โปรตีนเป้าหมาย (g/day)</label><input type="number" id="mProtein" value="60"></div>
+            <div><label>โปรตีนเป้าหมาย (g/day)</label><input type="number" id="mProtein" placeholder="ระบุโปรตีนเป้าหมาย"></div>
         </div>
         <label>ความเข้มข้น (kcal/ml) <span id="concNote" style="color:#e67e22;font-size:0.75rem;"></span></label>
         <div class="conc-grid" id="medConcGrid">
@@ -174,10 +174,7 @@
 
     <button class="btn-calc" onclick="medCalculate()">🔢 คำนวณ</button>
     <!-- ปุ่มบันทึก (เพิ่มใหม่) — กดเมื่อจะใช้ผลคำนวณนี้จริง (แยกจากการคำนวณดูเฉย ๆ เช่นเคส OPD) -->
-    <button class="btn-main hidden" id="btnSaveMed" onclick="saveMedRecord()">💾 บันทึก</button>
-    <!-- ปุ่มพิมพ์ใบสั่ง page med (เพิ่มใหม่ — ซ่อนไว้ก่อน แสดงหลังคำนวณ) -->
-    <button class="btn-print hidden" id="btnPrintMed" onclick="openPrint('med')">🖨️ พิมพ์ใบสั่ง</button>
-
+    
     <div id="medErr" class="hidden"></div>
     <div class="res-card hidden" id="medResult">
         <div class="res-title">📊 ผลการคำนวณ</div>
@@ -185,12 +182,26 @@
         <div id="medDets"></div>
     </div>
     <div id="medProtein"></div>
-    <div class="card hidden" id="medMealCard">
-        <div class="med-title">🍽️ แบ่งตามมื้อ</div>
-        <table class="meal-tbl">
-            <thead><tr><th>มื้อที่</th><th>ml</th><th>ผง/ปริมาณ</th><th>โปรตีน</th></tr></thead>
-            <tbody id="medMealBody"></tbody>
+    <!-- ปุ่มบันทึกมื้อ Med -->
+    <button class="btn-main hidden" id="btnMedRecord" onclick="addMedRecord()" style="margin-bottom:14px;">✨ บันทึกมื้อนี้</button>
+    <!-- ปุ่มพิมพ์ใบสั่ง -->
+    <button class="btn-print hidden" id="btnPrintMed" onclick="openPrint('med')">🖨️ พิมพ์ใบสั่ง</button>
+
+    <!-- ยอดรวม Med -->
+    <div class="total-box hidden" id="medTotalBox" style="margin-bottom:14px;">
+        <div><small>Vol รวมวันนี้</small><b id="mTVol">0</b></div>
+        <div><small>Kcal รวมวันนี้</small><b id="mTKcal">0</b></div>
+        <div><small>โปรตีนรวม</small><b id="mTPro">0</b></div>
+    </div>
+
+    <!-- log Med -->
+    <div class="card hidden" id="medLogSection">
+        <label>ประวัติการบันทึกวันนี้</label>
+        <table class="log-table">
+            <thead><tr><th>เวลา</th><th>ml</th><th>kcal</th><th>Pro(g)</th><th>ลบ</th></tr></thead>
+            <tbody id="medLogBody"></tbody>
         </table>
+        <center><button onclick="clearMedLogs()" style="margin-top:20px;border:none;background:#eee;color:#666;padding:8px 20px;border-radius:50px;cursor:pointer;">🗑️ ล้างข้อมูลทั้งหมด</button></center>
     </div>
 
 </div>
@@ -226,7 +237,7 @@ function switchTab(name, btn) {
     if (name === 'med') _startTiming('med', 'เข้าหน้าอาหารทางการแพทย์');
 }
 
-window.onload = () => { renderMenu(); renderLogs(); renderMedBrands(); };
+window.onload = () => { renderMenu(); renderLogs(); renderMedBrands(); renderMedLogs(); };
 
 // ── Sync ──
 async function syncData() {
@@ -714,25 +725,86 @@ function medCalculate() {
         ps.innerHTML = ph;
     }
 
-    // ── Meal table ──
-    const mc = document.getElementById('medMealCard');
-    mc.classList.remove('hidden');
-    let rows = "";
-    for (let i = 1; i <= r.meals; i++) {
-        const powderCell = r.type === 'POWDER'
-            ? `${r.powderPerMeal.toFixed(1)}g${r.scoopsPerMeal ? ` (${r.scoopsPerMeal.toFixed(1)} ช้อน)` : ''}`
-            : `${r.kcalPerMeal.toFixed(0)} kcal`;
-        rows += `<tr><td>มื้อที่ ${i}</td><td>${r.mlPerMeal.toFixed(0)}</td><td>${powderCell}</td><td>${r.proteinPerMeal.toFixed(1)} g</td></tr>`;
-    }
-    document.getElementById('medMealBody').innerHTML = rows;
-
-    // ── แสดงปุ่มบันทึก/พิมพ์ใบสั่ง (เพิ่มใหม่) ──
-    document.getElementById('btnSaveMed').classList.remove('hidden');
+   // ── แสดงปุ่มและ log ──
+    
     document.getElementById('btnPrintMed').classList.remove('hidden');
+    document.getElementById('btnMedRecord').classList.remove('hidden');
+    document.getElementById('medTotalBox').classList.remove('hidden');
+    renderMedLogs();
 
     rc.scrollIntoView({behavior:'smooth', block:'start'});
 }
+// ══════════════════════════════════════
+//  MED LOG SYSTEM
+// ══════════════════════════════════════
+let medLogs = JSON.parse(localStorage.getItem('bd_med_logs')) || [];
 
+function addMedRecord() {
+    const brand       = medBrandsDb[medSelectedIdx];
+    const totalVol    = parseFloat(document.getElementById('mVol').value) || 0;
+    const meals       = parseInt(document.getElementById('mMeals').value) || 1;
+    const totalKcal   = totalVol * medConc;
+    const totalPro    = (brand.proteinPer1000 || 0) * (totalKcal / 1000);
+    const mlPerMeal   = totalVol / meals;
+    const kcalPerMeal = totalKcal / meals;
+    const proPerMeal  = totalPro / meals;
+
+    const now  = new Date();
+    const time = now.getHours().toString().padStart(2,'0') + ":" + now.getMinutes().toString().padStart(2,'0');
+    medLogs.push({
+        time,
+        vol:     parseFloat(mlPerMeal.toFixed(0)),
+        kcal:    parseFloat(kcalPerMeal.toFixed(0)),
+        protein: parseFloat(proPerMeal.toFixed(1)),
+        id:      Date.now()
+    });
+    localStorage.setItem('bd_med_logs', JSON.stringify(medLogs));
+    renderMedLogs();
+    alert("บันทึกแล้ว ✅");
+}
+
+function renderMedLogs() {
+    const body    = document.getElementById('medLogBody');
+    const section = document.getElementById('medLogSection');
+    const tbox    = document.getElementById('medTotalBox');
+    let tv = 0, tk = 0, tp = 0;
+    body.innerHTML = "";
+    if (medLogs.length > 0) {
+        section.classList.remove('hidden');
+        tbox.classList.remove('hidden');
+        medLogs.forEach(item => {
+            tv += item.vol;
+            tk += item.kcal;
+            tp += item.protein;
+            body.innerHTML += `<tr>
+                <td>${item.time}</td>
+                <td>${item.vol}</td>
+                <td>${item.kcal}</td>
+                <td>${item.protein}</td>
+                <td><button class="btn-del" onclick="deleteMedEntry(${item.id})">🗑️</button></td>
+            </tr>`;
+        });
+    } else {
+        section.classList.add('hidden');
+    }
+    document.getElementById('mTVol').innerText  = tv.toLocaleString();
+    document.getElementById('mTKcal').innerText = tk.toLocaleString();
+    document.getElementById('mTPro').innerText  = tp.toFixed(1) + " g";
+}
+
+function deleteMedEntry(id) {
+    medLogs = medLogs.filter(i => i.id !== id);
+    localStorage.setItem('bd_med_logs', JSON.stringify(medLogs));
+    renderMedLogs();
+}
+
+function clearMedLogs() {
+    if (confirm("ล้างข้อมูลทั้งหมด?")) {
+        medLogs = [];
+        localStorage.removeItem('bd_med_logs');
+        renderMedLogs();
+    }
+}
 // ══════════════════════════════════════
 //  SAVE MED RECORD (เพิ่มใหม่ — ไม่กระทบโค้ดเดิม)
 //  กดเมื่อจะใช้ผลคำนวณนี้จริง (แยกจากการกดคำนวณดูเฉย ๆ เช่นเคส OPD)
